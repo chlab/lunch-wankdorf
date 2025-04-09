@@ -1,6 +1,8 @@
 package app
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -8,6 +10,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/leuenbergerc/lunch-wankdorf/pkg/ai"
+	"github.com/leuenbergerc/lunch-wankdorf/pkg/file"
 	"github.com/leuenbergerc/lunch-wankdorf/pkg/scraper"
 )
 
@@ -15,8 +18,14 @@ const (
 	menuURL = "https://app.food2050.ch/de/sbb-gira/gira/menu/mittagsmenue/weekly"
 )
 
+// Config holds application configuration settings
+type Config struct {
+	DebugMode bool // If true, debug files will be written
+	DryRun    bool // If true, no API calls will be made
+}
+
 // Run starts the application
-func Run() {
+func Run(config Config) {
 	// Load environment variables from .env file
 	loadEnv()
 
@@ -26,20 +35,54 @@ func Run() {
 	if err != nil {
 		log.Fatalf("Error scraping menu data: %v", err)
 	}
+
+	// Save debug files if debug mode is enabled
+	if config.DebugMode {
+		// Save raw HTML content to debug file
+		htmlDebugFile, err := file.WriteToDebugFile(htmlContent.Content, "raw_html")
+		if err != nil {
+			log.Printf("Warning: Could not write raw HTML to debug file: %v", err)
+		} else {
+			fmt.Printf("Saved raw HTML to %s\n", htmlDebugFile)
+		}
+	}
+
+	// Extract menu content
 	menuData := ExtractMenuContent(htmlContent.Content)
 
+	// Save debug files if debug mode is enabled
+	if config.DebugMode {
+		// Save extracted menu content to debug file
+		menuContentDebugFile, err := file.WriteToDebugFile(menuData, "menu_content")
+		if err != nil {
+			log.Printf("Warning: Could not write menu content to debug file: %v", err)
+		} else {
+			fmt.Printf("Saved menu content to %s\n", menuContentDebugFile)
+		}
+	}
+
 	contentLength := len(menuData)
-	fmt.Printf("Successfully scraped menu content (%d bytes)\n", contentLength)
+	fmt.Printf("Successfully extracted menu content (%d bytes)\n", contentLength)
 
 	if contentLength == 0 {
 		log.Fatalf("No menu content found on the page")
 	}
 
-	// Print the full HTML content
-	fmt.Println("\nHTML Content:")
+	// Print a sample of the content
+	preview := menuData
+	if len(preview) > 500 {
+		preview = preview[:500] + "..."
+	}
+	fmt.Println("\nMenu Content Sample:")
 	fmt.Println("=============")
-	fmt.Println(menuData)
+	fmt.Println(preview)
 	fmt.Println("=============")
+
+	// Abort menu pars if dry run is enabled
+	if config.DryRun {
+		fmt.Println("Dry Run, aborting parsing menu...")
+		return
+	}
 
 	// Parse menu using OpenAI
 	fmt.Println("Parsing menu data with OpenAI...")
@@ -48,15 +91,41 @@ func Run() {
 		log.Fatalf("Error parsing menu data: %v", err)
 	}
 
+	// Save debug files if debug mode is enabled
+	if config.DebugMode {
+		// Save parsed menu to debug file
+		parsedMenuDebugFile, err := file.WriteToDebugFile(parsedMenu, "parsed_menu")
+		if err != nil {
+			log.Printf("Warning: Could not write parsed menu to debug file: %v", err)
+		} else {
+			fmt.Printf("Saved parsed menu to %s\n", parsedMenuDebugFile)
+		}
+	}
+
+	// Format JSON for output
+	var prettyJSON bytes.Buffer
+	if err := json.Indent(&prettyJSON, []byte(parsedMenu), "", "  "); err != nil {
+		prettyJSON = *bytes.NewBufferString(parsedMenu)
+	}
+
+	// Write to output file if specified
+	// if config.DebugMode {
+	// 	outputFile, err := file.WriteToDebugFile(prettyJSON.String(), "parsed_menu")
+	// 	if err != nil {
+	// 		log.Printf("Warning: Could not write to output file %s: %v", outputFile, err)
+	// 	} else {
+	// 		fmt.Printf("Menu written to %s\n", outputFile)
+	// 	}
+	// }
+
 	// Output the parsed menu
 	fmt.Println("\nWeekly Menu:")
 	fmt.Println("===========")
-	fmt.Println(parsedMenu)
+	fmt.Println(prettyJSON.String())
 }
 
 // ExtractMenuContent extracts menu-specific content from HTML
 func ExtractMenuContent(html string) string {
-	// First clean the HTML
 	return scraper.CleanHTML(html)
 }
 

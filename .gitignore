@@ -4,6 +4,9 @@
 # Binary files
 /bin/*
 
+# Debug files
+/debug/*
+
 # Go specific
 *.exe
 *.exe~
