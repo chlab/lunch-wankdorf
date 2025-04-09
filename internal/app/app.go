@@ -8,6 +8,11 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/leuenbergerc/lunch-wankdorf/pkg/ai"
+	"github.com/leuenbergerc/lunch-wankdorf/pkg/scraper"
+)
+
+const (
+	menuURL = "https://app.food2050.ch/de/sbb-gira/gira/menu/mittagsmenue/weekly"
 )
 
 // Run starts the application
@@ -15,24 +20,37 @@ func Run() {
 	// Load environment variables from .env file
 	loadEnv()
 
-	// Sample prompt to get lunch suggestions
-	prompt := `Generate 3 lunch options for a team in Bern, Switzerland. 
-For each option, provide:
-1. Name of the dish
-2. Type of cuisine 
-3. Estimated preparation time
-4. A brief description
-Format as a simple list.`
-
-	fmt.Println("Sending prompt to OpenAI API...")
-	response, err := ai.CreateCompletion(prompt)
+	// Fetch the restaurant menu content
+	fmt.Println("Scraping menu data from", menuURL)
+	menuData, err := scraper.ScrapeMenuContent(menuURL)
 	if err != nil {
-		log.Fatalf("Error getting AI response: %v", err)
+		log.Fatalf("Error scraping menu data: %v", err)
 	}
 
-	fmt.Println("\nLunch Options:")
-	fmt.Println("==============")
-	fmt.Println(response)
+	contentLength := len(menuData.Content)
+	fmt.Printf("Successfully scraped menu content (%d bytes)\n", contentLength)
+
+	if contentLength == 0 {
+		log.Fatalf("No menu content found on the page")
+	}
+
+	// Print the full HTML content
+	fmt.Println("\nHTML Content:")
+	fmt.Println("=============")
+	fmt.Println(menuData.Content)
+	fmt.Println("=============\n")
+
+	// Parse menu using OpenAI
+	fmt.Println("Parsing menu data with OpenAI...")
+	parsedMenu, err := ai.ParseRestaurantMenu(menuData.Content)
+	if err != nil {
+		log.Fatalf("Error parsing menu data: %v", err)
+	}
+
+	// Output the parsed menu
+	fmt.Println("\nWeekly Menu:")
+	fmt.Println("===========")
+	fmt.Println(parsedMenu)
 }
 
 // loadEnv attempts to load environment variables from a .env file
