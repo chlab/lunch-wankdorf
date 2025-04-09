@@ -22,12 +22,13 @@ func Run() {
 
 	// Fetch the restaurant menu content
 	fmt.Println("Scraping menu data from", menuURL)
-	menuData, err := scraper.ScrapeMenuContent(menuURL)
+	htmlContent, err := scraper.ScrapeMenuContent(menuURL)
 	if err != nil {
 		log.Fatalf("Error scraping menu data: %v", err)
 	}
+	menuData := ExtractMenuContent(htmlContent.Content)
 
-	contentLength := len(menuData.Content)
+	contentLength := len(menuData)
 	fmt.Printf("Successfully scraped menu content (%d bytes)\n", contentLength)
 
 	if contentLength == 0 {
@@ -37,12 +38,12 @@ func Run() {
 	// Print the full HTML content
 	fmt.Println("\nHTML Content:")
 	fmt.Println("=============")
-	fmt.Println(menuData.Content)
-	fmt.Println("=============\n")
+	fmt.Println(menuData)
+	fmt.Println("=============")
 
 	// Parse menu using OpenAI
 	fmt.Println("Parsing menu data with OpenAI...")
-	parsedMenu, err := ai.ParseRestaurantMenu(menuData.Content)
+	parsedMenu, err := ai.ParseRestaurantMenu(menuData)
 	if err != nil {
 		log.Fatalf("Error parsing menu data: %v", err)
 	}
@@ -51,6 +52,12 @@ func Run() {
 	fmt.Println("\nWeekly Menu:")
 	fmt.Println("===========")
 	fmt.Println(parsedMenu)
+}
+
+// ExtractMenuContent extracts menu-specific content from HTML
+func ExtractMenuContent(html string) string {
+	// First clean the HTML
+	return scraper.CleanHTML(html)
 }
 
 // loadEnv attempts to load environment variables from a .env file

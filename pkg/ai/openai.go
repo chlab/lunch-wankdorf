@@ -2,8 +2,11 @@ package ai
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/sashabaranov/go-openai"
@@ -38,9 +41,8 @@ func CreateCompletion(prompt string) (string, error) {
 			MaxTokens: 2000,
 		},
 	)
-
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("OpenAI API error: %w", err)
 	}
 
 	if len(resp.Choices) == 0 {
@@ -52,7 +54,7 @@ func CreateCompletion(prompt string) (string, error) {
 
 // ParseRestaurantMenu sends HTML content to OpenAI to extract menu information
 func ParseRestaurantMenu(htmlContent string) (string, error) {
-	prompt := `Parse the following HTML of a restaurant's menu options for the week. The text is in German. 
+	prompt := `Parse the following text extracted from a restaurant's weekly menu. The text is in German. 
 Return a JSON structure where the key is the day of the week in English (Monday, Tuesday, etc.) 
 and the value is an array of menu options for that day. Each menu option should have these keys:
 - name: The name of the dish
@@ -61,8 +63,31 @@ and the value is an array of menu options for that day. Each menu option should 
 
 Format your response as clean, properly formatted JSON only, with no explanations or additional text.
 
-Here is the menu HTML content to parse:
+Here is the extracted menu text:
 ` + htmlContent
 
-	return CreateCompletion(prompt)
+	result, err := CreateCompletion(prompt)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse menu: %w", err)
+	}
+
+	// Validate that the result is valid JSON
+	var jsonData interface{}
+	if err := json.Unmarshal([]byte(result), &jsonData); err != nil {
+		// If not valid JSON, try to extract JSON from the response
+		// Sometimes the model might include markdown backticks or explanations
+		jsonStartIdx := strings.Index(result, "{")
+		jsonEndIdx := strings.LastIndex(result, "}")
+
+		if jsonStartIdx >= 0 && jsonEndIdx > jsonStartIdx {
+			jsonStr := result[jsonStartIdx : jsonEndIdx+1]
+			if err := json.Unmarshal([]byte(jsonStr), &jsonData); err == nil {
+				return jsonStr, nil
+			}
+		}
+
+		return result, fmt.Errorf("API returned invalid JSON: %v", err)
+	}
+
+	return result, nil
 }
