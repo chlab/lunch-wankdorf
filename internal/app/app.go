@@ -108,16 +108,6 @@ func Run(config Config) {
 		prettyJSON = *bytes.NewBufferString(parsedMenu)
 	}
 
-	// Write to output file if specified
-	// if config.DebugMode {
-	// 	outputFile, err := file.WriteToDebugFile(prettyJSON.String(), "parsed_menu")
-	// 	if err != nil {
-	// 		log.Printf("Warning: Could not write to output file %s: %v", outputFile, err)
-	// 	} else {
-	// 		fmt.Printf("Menu written to %s\n", outputFile)
-	// 	}
-	// }
-
 	// Output the parsed menu
 	fmt.Println("\nWeekly Menu:")
 	fmt.Println("===========")
@@ -126,7 +116,7 @@ func Run(config Config) {
 
 // ExtractMenuContent extracts menu-specific content from HTML
 func ExtractMenuContent(html string) string {
-	return scraper.CleanHTML(html)
+	return scraper.OptimizeHTML(html)
 }
 
 // loadEnv attempts to load environment variables from a .env file

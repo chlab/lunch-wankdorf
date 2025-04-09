@@ -1,12 +1,53 @@
 package scraper
 
 import (
+	"bytes"
+	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/tdewolff/minify/v2"
+	"github.com/tdewolff/minify/v2/html"
 )
 
+func OptimizeHTML(html string) string {
+	html = minimizeHTML(html)
+	html = cleanHTML(html)
+	html = stripTags(html)
+	return html
+}
+
+func minimizeHTML(htmlContent string) string {
+	// Initialize minifier
+	m := minify.New()
+	m.AddFunc("text/html", html.Minify)
+	m.Add("text/html", &html.Minifier{
+		KeepQuotes: true,
+	})
+
+	// Create input and output buffers
+	input := bytes.NewBufferString(htmlContent)
+	output := &bytes.Buffer{}
+
+	// Minify the content
+	var minifiedContent string
+	err := m.Minify("text/html", output, input)
+	if err != nil {
+		fmt.Printf("Error minifying HTML: %v, using original content\n", err)
+		minifiedContent = htmlContent
+	} else {
+		minified := output.String()
+		fmt.Printf("Minified HTML from %d to %d bytes (%.1f%%)\n",
+			len(htmlContent),
+			len(minified),
+			float64(len(minified))/float64(len(htmlContent))*100)
+		minifiedContent = minified
+	}
+	return minifiedContent
+}
+
 // CleanHTML removes unnecessary parts of HTML like images, SVGs, comments, etc.
-func CleanHTML(html string) string {
+func cleanHTML(html string) string {
 	// Remove HTML comments
 	html = regexp.MustCompile(`<!--[\s\S]*?-->`).ReplaceAllString(html, "")
 
@@ -50,6 +91,23 @@ func CleanHTML(html string) string {
 	html = strings.ReplaceAll(html, "&amp;", "&")
 	html = strings.ReplaceAll(html, "&lt;", "<")
 	html = strings.ReplaceAll(html, "&gt;", ">")
+
+	return html
+}
+
+// stripTags removes class and style attributes from HTML tags
+func stripTags(html string) string {
+	// Remove class attributes
+	html = regexp.MustCompile(` class="[^"]*"`).ReplaceAllString(html, "")
+	html = regexp.MustCompile(` class='[^']*'`).ReplaceAllString(html, "")
+
+	// Remove style attributes
+	html = regexp.MustCompile(` style="[^"]*"`).ReplaceAllString(html, "")
+	html = regexp.MustCompile(` style='[^']*'`).ReplaceAllString(html, "")
+
+	// Remove target attributes
+	html = regexp.MustCompile(` target="[^"]*"`).ReplaceAllString(html, "")
+	html = regexp.MustCompile(` target='[^']*'`).ReplaceAllString(html, "")
 
 	return html
 }
