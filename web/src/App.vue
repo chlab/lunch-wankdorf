@@ -10,160 +10,190 @@ const menu = {
     {
       "name": "Insalata Del Giorno",
       "description": "«Insalata di tonno», mit Mischsalat, Tomaten, Peperoni, Radieschen, Bohnen, Kartoffeln, Thon und Oliven, Italienne Dressing",
-      "type": "vegetarian"
+      "type": "vegetarian",
+      "link": "/de/sbb-gira/gira/food-profile/2025-04-07-mittagsverpflegung-insalata-del-giorno"
     },
     {
       "name": "Pasta Del Giorno",
       "description": "«Hausgemachte Pasta Primavera, con asparagi verdi e aglio orsino», mit grünen Spargeln, Bärlauch, Gemüsestreifen, Frühlingszwiebeln, Reibkäse und Menusalat",
-      "type": "vegetarian"
+      "type": "vegetarian",
+      "link": "/de/sbb-gira/gira/food-profile/2025-04-07-mittagsverpflegung-pasta-del-giorno"
     },
     {
       "name": "Pizza Del Giorno",
       "description": "«Pizza al diavolo», Tomatensauce, Mozzarella, scharfe Salami-Chorizo, Peperoni, Zwiebeln, Knoblauch, Oregano und Menusalat",
-      "type": "meat"
+      "type": "meat",
+      "link": "/de/sbb-gira/gira/food-profile/2025-04-07-mittagsverpflegung-pizza-del-giorno"
     },
     {
       "name": "Insalata Settimanale",
       "description": "«Insalata Caesar», Mischsalat, junger Lattich, Speckwürfeli, Poulet, Ei, Cherrytomaten, Grana Padano, Croùtons & Caeser Dressing",
-      "type": "meat"
+      "type": "meat",
+      "link": "/de/sbb-gira/gira/food-profile/2025-04-07-mittagsverpflegung-insalata-settimanale"
     },
     {
       "name": "Pasta Settimanale",
       "description": "«Pasta alla fiamma», mit Rindfleischstreifen, Tomatenrahmsauce, rote Zwiebeln, Peperoni, Grappa, Menusalat",
-      "type": "meat"
+      "type": "meat",
+      "link": "/de/sbb-gira/gira/food-profile/2025-04-07-mittagsverpflegung-pasta-settimanale"
     },
     {
       "name": "Pizza Settimanale",
       "description": "«Pizza asparagi verdi, con di orsino e cipolline», mit Tomatensauce, Mozzarella, grünen Spargeln, Bärlauchpesto, Frühlingszwiebeln und Oregano, Menusalat",
-      "type": "vegetarian"
+      "type": "vegetarian",
+      "link": "/de/sbb-gira/gira/food-profile/2025-04-07-mittagsverpflegung-pizza-settimanale"
     }
   ],
   "Tuesday": [
     {
       "name": "Insalata Del Giorno",
       "description": "«Insalata Mykonos», mit farbigem Peperoni-, Auberginen-Antipasti, Fetawürfeli und Oliven, Italienne Dressing",
-      "type": "vegetarian"
+      "type": "vegetarian",
+      "link": "/de/sbb-gira/gira/food-profile/2025-04-08-mittagsverpflegung-insalata-del-giorno"
     },
     {
       "name": "Pasta Del Giorno",
       "description": "«Hausgemachte Pasta, all'amatriciana», mit Speck-Tomatensauce, Zwergtomaten und Petersilie, Menusalat",
-      "type": "meat"
+      "type": "meat",
+      "link": "/de/sbb-gira/gira/food-profile/2025-04-08-mittagsverpflegung-pasta-del-giorno"
     },
     {
       "name": "Pizza Del Giorno",
       "description": "«Pizza Lopes», mit Tomatensauce, Mozzarella, Raclettekäse, junger Spinat, rosa Pfefferkörner und Oregano, Menusalat",
-      "type": "vegetarian"
+      "type": "vegetarian",
+      "link": "/de/sbb-gira/gira/food-profile/2025-04-08-mittagsverpflegung-pizza-del-giorno"
     },
     {
       "name": "Insalata Settimanale",
       "description": "«Insalata Caesar», Mischsalat, junger Lattich, Speckwürfeli, Poulet, Ei, Cherrytomaten, Grana Padano, Croùtons & Caeser Dressing",
-      "type": "meat"
+      "type": "meat",
+      "link": "/de/sbb-gira/gira/food-profile/2025-04-08-mittagsverpflegung-insalata-settimanale"
     },
     {
       "name": "Pasta Settimanale",
       "description": "«Pasta alla fiamma», mit Rindfleischstreifen, Tomatenrahmsauce, rote Zwiebeln, Peperoni, Grappa, Menusalat",
-      "type": "meat"
+      "type": "meat",
+      "link": "/de/sbb-gira/gira/food-profile/2025-04-08-mittagsverpflegung-pasta-settimanale"
     },
     {
       "name": "Pizza Settimanale",
       "description": "«Pizza asparagi verdi, con di orsino e cipolline», mit Tomatensauce, Mozzarella, grünen Spargeln, Bärlauchpesto, Frühlingszwiebeln und Oregano, Menusalat",
-      "type": "vegetarian"
+      "type": "vegetarian",
+      "link": "/de/sbb-gira/gira/food-profile/2025-04-08-mittagsverpflegung-pizza-settimanale"
     }
   ],
   "Wednesday": [
     {
       "name": "Insalata Del Giorno",
       "description": "«Insalata Mexicana», Mischsalat, Avocados, Tomaten, Peperoni, Mais, rote Bohnen, Nachos, Chunky-Salsa",
-      "type": "vegetarian"
+      "type": "vegetarian",
+      "link": "/de/sbb-gira/gira/food-profile/2025-04-09-mittagsverpflegung-insalata-del-giorno"
     },
     {
       "name": "Pasta Del Giorno",
       "description": "«Hausgemachte Pasta all`arrabiata», rassige Tomatensauce, Peperoncini, Petersilie, Tomatenwürfel, Reibkäse, Menusalat",
-      "type": "vegetarian"
+      "type": "vegetarian",
+      "link": "/de/sbb-gira/gira/food-profile/2025-04-09-mittagsverpflegung-pasta-del-giorno"
     },
     {
       "name": "Pizza Del Giorno",
       "description": "«Pizza salmone affumicato», Tomatensauce, Mozzarella, Rauchlachs, Kapern, rote Zwiebeln, Oregano, Menusalat",
-      "type": "meat"
+      "type": "meat",
+      "link": "/de/sbb-gira/gira/food-profile/2025-04-09-mittagsverpflegung-pizza-del-giorno"
     },
     {
       "name": "Insalata Settimanale",
       "description": "«Insalata Caesar», Mischsalat, junger Lattich, Speckwürfeli, Poulet, Ei, Cherrytomaten, Grana Padano, Croùtons & Caeser Dressing",
-      "type": "meat"
+      "type": "meat",
+      "link": "/de/sbb-gira/gira/food-profile/2025-04-09-mittagsverpflegung-insalata-settimanale"
     },
     {
       "name": "Pasta Settimanale",
       "description": "«Pasta alla fiamma», mit Rindfleischstreifen, Tomatenrahmsauce, rote Zwiebeln, Peperoni, Grappa, Menusalat",
-      "type": "meat"
+      "type": "meat",
+      "link": "/de/sbb-gira/gira/food-profile/2025-04-09-mittagsverpflegung-pasta-settimanale"
     },
     {
       "name": "Pizza Settimanale",
       "description": "«Pizza asparagi verdi, con di orsino e cipolline», mit Tomatensauce, Mozzarella, grünen Spargeln, Bärlauchpesto, Frühlingszwiebeln und Oregano, Menusalat",
-      "type": "vegetarian"
+      "type": "vegetarian",
+      "link": "/de/sbb-gira/gira/food-profile/2025-04-09-mittagsverpflegung-pizza-settimanale"
     }
   ],
   "Thursday": [
     {
       "name": "Insalata Del Giorno",
       "description": "«Insalata Greca», Blattsalat, Rucola, Feta, Tomaten, Peperoni, Gurken, schwarze Oliven und Zwiebeln, Balsamico-Oreganodressing",
-      "type": "vegetarian"
+      "type": "vegetarian",
+      "link": "/de/sbb-gira/gira/food-profile/2025-04-10-mittagsverpflegung-insalata-del-giorno"
     },
     {
       "name": "Pasta Del Giorno",
-      "description": "«Hausgemachte Pasta con feta, aglio, pomodori secci e olive nere», mit Feta, Dörrtomaten, Petersilie, schwarzen Oliven, Knoblauch, Reibkäse und Menusalat",
-      "type": "vegetarian"
+      "description": "«Hausgemachte Pasta con feta,, aglio, pomodori secci e olive nere», mit Feta, Dörrtomaten, Petersilie, schwarzen Oliven, Knoblauch, Reibkäse und Menusalat",
+      "type": "vegetarian",
+      "link": "/de/sbb-gira/gira/food-profile/2025-04-10-mittagsverpflegung-pasta-del-giorno"
     },
     {
       "name": "Pizza Del Giorno",
       "description": "«Pizza Dolce Vita», mit Tomatensauce, Mozzarella, Hinterschinken, Ananas, Oregano und Menusalat",
-      "type": "meat"
+      "type": "meat",
+      "link": "/de/sbb-gira/gira/food-profile/2025-04-10-mittagsverpflegung-pizza-del-giorno"
     },
     {
       "name": "Insalata Settimanale",
       "description": "«Insalata Caesar», Mischsalat, junger Lattich, Speckwürfeli, Poulet, Ei, Cherrytomaten, Grana Padano, Croùtons & Caeser Dressing",
-      "type": "meat"
+      "type": "meat",
+      "link": "/de/sbb-gira/gira/food-profile/2025-04-10-mittagsverpflegung-insalata-settimanale"
     },
     {
       "name": "Pasta Settimanale",
       "description": "«Pasta alla fiamma», mit Rindfleischstreifen, Tomatenrahmsauce, rote Zwiebeln, Peperoni, Grappa, Menusalat",
-      "type": "meat"
+      "type": "meat",
+      "link": "/de/sbb-gira/gira/food-profile/2025-04-10-mittagsverpflegung-pasta-settimanale"
     },
     {
       "name": "Pizza Settimanale",
       "description": "«Pizza asparagi verdi, con di orsino e cipolline», mit Tomatensauce, Mozzarella, grünen Spargeln, Bärlauchpesto, Frühlingszwiebeln und Oregano, Menusalat",
-      "type": "vegetarian"
+      "type": "vegetarian",
+      "link": "/de/sbb-gira/gira/food-profile/2025-04-10-mittagsverpflegung-pizza-settimanale"
     }
   ],
   "Friday": [
     {
       "name": "Insalata Del Giorno",
       "description": "«Insalata Ankara», Mischsalat, Bulgur, Gurken, Oliven, Tomaten, Zwiebeln, Feta, Kabisduett, Karotten, Ajvar-Italienne Dressing",
-      "type": "vegetarian"
+      "type": "vegetarian",
+      "link": "/de/sbb-gira/gira/food-profile/2025-04-11-mittagsverpflegung-insalata-del-giorno"
     },
     {
       "name": "Pasta Del Giorno",
       "description": "«Hausgemachte Pasta Alfredo», mit Rahmsauce, Pouletstreifen, Gartenerbsen, Petersilie, Reibkäse und Menusalat",
-      "type": "meat"
+      "type": "meat",
+      "link": "/de/sbb-gira/gira/food-profile/2025-04-11-mittagsverpflegung-pasta-del-giorno"
     },
     {
       "name": "Pizza Del Giorno",
       "description": "«Pizza funghi», mit Tomatensauce, Mozzarella, Zweierlei Champignons, Oregano und Menusalat",
-      "type": "vegetarian"
+      "type": "vegetarian",
+      "link": "/de/sbb-gira/gira/food-profile/2025-04-11-mittagsverpflegung-pizza-del-giorno"
     },
     {
       "name": "Insalata Settimanale",
       "description": "«Insalata Caesar», Mischsalat, junger Lattich, Speckwürfeli, Poulet, Ei, Cherrytomaten, Grana Padano, Croùtons & Caeser Dressing",
-      "type": "meat"
+      "type": "meat",
+      "link": "/de/sbb-gira/gira/food-profile/2025-04-11-mittagsverpflegung-insalata-settimanale"
     },
     {
       "name": "Pasta Settimanale",
       "description": "«Pasta alla fiamma», mit Rindfleischstreifen, Tomatenrahmsauce, rote Zwiebeln, Peperoni, Grappa, Menusalat",
-      "type": "meat"
+      "type": "meat",
+      "link": "/de/sbb-gira/gira/food-profile/2025-04-11-mittagsverpflegung-pasta-settimanale"
     },
     {
       "name": "Pizza Settimanale",
       "description": "«Pizza asparagi verdi, con di orsino e cipolline», mit Tomatensauce, Mozzarella, grünen Spargeln, Bärlauchpesto, Frühlingszwiebeln und Oregano, Menusalat",
-      "type": "vegetarian"
+      "type": "vegetarian",
+      "link": "/de/sbb-gira/gira/food-profile/2025-04-11-mittagsverpflegung-pizza-settimanale"
     }
   ]
 };
@@ -199,6 +229,7 @@ const restaurants = [
         :name="item.name" 
         :description="item.description" 
         :type="item.type"
+        :link="item.link || ''"
       />
     </div>
     <div v-else class="text-center py-8 text-gray-500">
