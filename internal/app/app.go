@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/joho/godotenv"
 	"github.com/leuenbergerc/lunch-wankdorf/pkg/ai"
@@ -18,7 +19,7 @@ import (
 type RestaurantMenu struct {
 	Name    string
 	URL     string
-	baseUrl string
+	BaseURL string
 }
 
 // Available restaurant menus
@@ -26,7 +27,7 @@ var restaurantMenus = map[string]RestaurantMenu{
 	"gira": {
 		Name:    "Gira",
 		URL:     "https://app.food2050.ch/de/sbb-gira/gira/menu/mittagsmenue/weekly",
-		baseUrl: "https://app.food2050.ch/",
+		BaseURL: "https://app.food2050.ch",
 	},
 }
 
@@ -117,10 +118,17 @@ func Run(config Config) {
 		log.Fatalf("Error parsing menu data: %v", err)
 	}
 
+	// Process the menu to add full URLs to links
+	processedMenu, err := processMenuLinks(parsedMenu, restaurant.BaseURL)
+	if err != nil {
+		log.Printf("Warning: Could not process menu links: %v", err)
+		processedMenu = parsedMenu // Fall back to original parsed menu
+	}
+
 	// Save debug files if debug mode is enabled
 	if config.DebugMode {
 		// Save parsed menu to debug file
-		parsedMenuDebugFile, err := file.WriteToDebugFile(parsedMenu, "parsed_menu")
+		parsedMenuDebugFile, err := file.WriteToDebugFile(processedMenu, "parsed_menu")
 		if err != nil {
 			log.Printf("Warning: Could not write parsed menu to debug file: %v", err)
 		} else {
@@ -130,14 +138,46 @@ func Run(config Config) {
 
 	// Format JSON for output
 	var prettyJSON bytes.Buffer
-	if err := json.Indent(&prettyJSON, []byte(parsedMenu), "", "  "); err != nil {
-		prettyJSON = *bytes.NewBufferString(parsedMenu)
+	if err := json.Indent(&prettyJSON, []byte(processedMenu), "", "  "); err != nil {
+		prettyJSON = *bytes.NewBufferString(processedMenu)
 	}
 
 	// Output the parsed menu
 	fmt.Println("\nWeekly Menu:")
 	fmt.Println("===========")
 	fmt.Println(prettyJSON.String())
+}
+
+// processMenuLinks adds the restaurant's base URL to relative links in the menu
+func processMenuLinks(menuJSON string, baseURL string) (string, error) {
+	// Parse the JSON string
+	var menuData map[string][]map[string]interface{}
+	if err := json.Unmarshal([]byte(menuJSON), &menuData); err != nil {
+		return "", fmt.Errorf("failed to unmarshal menu JSON: %v", err)
+	}
+
+	// Process each day's menu items
+	for day, menuItems := range menuData {
+		for i, item := range menuItems {
+			// Check if the item has a link
+			if link, ok := item["link"].(string); ok && link != "" {
+				// Check if it's a relative URL
+				if strings.HasPrefix(link, "/") {
+					// Create the full URL by combining base URL and relative path
+					item["link"] = baseURL + link
+					menuData[day][i] = item
+				}
+			}
+		}
+	}
+
+	// Convert back to JSON
+	processedJSON, err := json.Marshal(menuData)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal processed menu: %v", err)
+	}
+
+	return string(processedJSON), nil
 }
 
 // ExtractMenuContent extracts menu-specific content from HTML

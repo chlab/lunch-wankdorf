@@ -38,7 +38,7 @@ func CreateCompletion(prompt string) (string, error) {
 					Content: prompt,
 				},
 			},
-			MaxTokens: 2000,
+			// MaxTokens: 2000,
 		},
 	)
 	if err != nil {
@@ -60,6 +60,7 @@ for that day. Each menu option should have these keys:
 - name: The name of the dish
 - description: A description of the dish
 - type: The type of dish (vegetarian, meat, etc.)
+- link: A link to the dish on the restaurant's website
 Format your response as clean, properly formatted JSON only, with no explanations or additional text.
 Here is the extracted HTML of the menu:
 ` + htmlContent
