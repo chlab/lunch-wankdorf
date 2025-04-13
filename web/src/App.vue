@@ -17,15 +17,15 @@ const error = ref(null);
 // Format the current date for display
 const formattedDate = computed(() => {
   return new Intl.DateTimeFormat('de-CH', { 
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+    weekday: 'long'
   }).format(currentDate.value);
 });
 
 // Navigate to previous day
 const goToPreviousDay = () => {
+  if (currentDate.value.getDay() == 1) {
+    return;
+  }
   const newDate = new Date(currentDate.value);
   newDate.setDate(newDate.getDate() - 1);
   currentDate.value = newDate;
@@ -34,6 +34,9 @@ const goToPreviousDay = () => {
 
 // Navigate to next day
 const goToNextDay = () => {
+  if (currentDate.value.getDay() == 5) {
+    return;
+  }
   const newDate = new Date(currentDate.value);
   newDate.setDate(newDate.getDate() + 1);
   currentDate.value = newDate;
@@ -71,7 +74,7 @@ const restaurants = [
 <template>
   <div class="min-h-screen flex flex-col">
     <!-- Sticky Header -->
-    <header class="top-0 py-4 shadow-md z-10">
+    <header class="top-0 pt-4">
       <DateNavigator 
         :formatted-date="formattedDate" 
         @date-back="goToPreviousDay" 
