@@ -1,38 +1,33 @@
-name: Deploy to GitHub Pages
+name: Deploy
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
 
 jobs:
   build:
+    name: Build
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
       - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-          cache: 'npm'
-          cache-dependency-path: web/package-lock.json
+        uses: actions/setup-node@v3
+
       - name: Install dependencies
-        run: npm ci
-        working-directory: ./web
-      - name: Build
+        uses: bahmutov/npm-install@v1
+
+      - name: Build project
         run: npm run build
-        working-directory: ./web
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+
+      - name: Upload production-ready build files
+        uses: actions/upload-artifact@v3
         with:
-          path: ./web/dist
+          name: production-files
+          path: ./dist
 
   deploy:
     name: Deploy
