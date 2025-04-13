@@ -14,6 +14,7 @@ func OptimizeHTML(html string) string {
 	html = minimizeHTML(html)
 	html = cleanHTML(html)
 	html = stripTags(html)
+	html = removeKlimawirkung(html)
 	return html
 }
 
@@ -110,4 +111,17 @@ func stripTags(html string) string {
 	html = regexp.MustCompile(` target='[^']*'`).ReplaceAllString(html, "")
 
 	return html
+}
+
+// all the SBB restaurants have a lot of redundant markdown, signaled by the string "Klimawirkung"
+// if we find it, we remove everything after it, otherwise we return the original text
+func removeKlimawirkung(text string) string {
+	klimaIndex := strings.Index(text, "Klimawirkung")
+	if klimaIndex == -1 {
+		// "Klimawirkung" not found, return the original text
+		return text
+	}
+
+	// Return only the text before "Klimawirkung"
+	return text[:klimaIndex]
 }
