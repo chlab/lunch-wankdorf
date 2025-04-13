@@ -169,9 +169,9 @@ const menu = {
 </script>
 <template>
   <div class="container mx-auto px-4 py-8 max-w-4xl">
-    <h1 class="text-3xl font-bold text-center mb-6">Lunch Wankdorf</h1>
-    <div class="bg-white rounded-lg shadow-md p-6">
-      <h2 class="text-xl font-semibold mb-4">{{ today }}'s Menu</h2>
+    <!-- <h1 class="text-3xl font-bold text-center mb-6">Lunch Wankdorf</h1> -->
+    <!-- <div class="bg-white rounded-lg shadow-md p-6"> -->
+      <!-- <h2 class="text-xl font-semibold mb-4">{{ today }}'s Menu</h2> -->
       <div v-if="menu[today]" class="space-y-4">
         <MenuItem 
           v-for="(item, index) in menu[today]" 
@@ -184,6 +184,6 @@ const menu = {
       <div v-else class="text-center py-8 text-gray-500">
         No menu available for today.
       </div>
-    </div>
+    <!-- </div> -->
   </div>
 </template>
