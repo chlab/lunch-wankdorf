@@ -1,27 +1,14 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted } from 'vue';
 import MenuItem from './components/MenuItem.vue';
 import Skeleton from './components/Skeleton.vue';
+import DateNavigator from './components/DateNavigator.vue';
 
 const menuUrl = 'https://pub-201cbf927f0b4c8991d32485a57b9d40.r2.dev/gira_20250413_171330.json';
-const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const today = days[new Date().getDay()];
-// const today = 'Monday'; // For testing a specific day
 
 const menu = ref({});
 const loading = ref(true);
 const error = ref(null);
-
-// Format current date for the header using Swiss German locale
-const formattedDate = computed(() => {
-  const date = new Date();
-  return new Intl.DateTimeFormat('de-CH', { 
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  }).format(date);
-});
 
 const loadMenu = async () => {
   try {
@@ -54,23 +41,8 @@ const restaurants = [
 <template>
   <div class="min-h-screen flex flex-col">
     <!-- Sticky Header -->
-    <header class="top-0 py-4">
-      <div class="flex mx-auto max-w-md text-center justify-between">
-        <button class="hover:bg-gray-300 rounded-full py-1 px-4">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-          </svg>
-        </button>
-        <div>
-          <h1 class="text-xl font-bold">Lunch Wankdorf</h1>
-          <p class="text-gray-600">{{ formattedDate }}</p>
-        </div>
-        <button class="hover:bg-gray-300 rounded-full py-1 px-4">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
-          </svg>
-        </button>
-      </div>
+    <header class="top-0 py-4 shadow-md z-10">
+      <DateNavigator />
     </header>
 
     <!-- Main Content -->
@@ -97,9 +69,9 @@ const restaurants = [
         Error loading menu: {{ error }}
       </div>
       <!-- menu items list -->
-      <div v-else-if="menu[today]" class="space-y-4">
+      <div v-else-if="menu[selectedDay]" class="space-y-4">
         <MenuItem 
-          v-for="(item, index) in menu[today]" 
+          v-for="(item, index) in menu[selectedDay]" 
           :key="index" 
           :name="item.name" 
           :description="item.description" 
