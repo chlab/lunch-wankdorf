@@ -88,6 +88,7 @@ func Run(config Config) {
 	fmt.Println("Parsing menu data with OpenAI...")
 	parsedMenu, err := ai.ParseRestaurantMenu(menuData)
 	if err != nil {
+		file.WriteToDebugFile(parsedMenu, "parsed_menu")
 		log.Fatalf("Error parsing menu data: %v", err)
 	}
 
