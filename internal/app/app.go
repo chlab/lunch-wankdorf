@@ -125,21 +125,21 @@ func Run(config Config) {
 		processedMenu = parsedMenu // Fall back to original parsed menu
 	}
 
+	// Format JSON for output
+	var prettyJSON bytes.Buffer
+	if err := json.Indent(&prettyJSON, []byte(processedMenu), "", "  "); err != nil {
+		prettyJSON = *bytes.NewBufferString(processedMenu)
+	}
+
 	// Save debug files if debug mode is enabled
 	if config.DebugMode {
 		// Save parsed menu to debug file
-		parsedMenuDebugFile, err := file.WriteToDebugFile(processedMenu, "parsed_menu")
+		parsedMenuDebugFile, err := file.WriteToDebugFile(prettyJSON.String(), "parsed_menu")
 		if err != nil {
 			log.Printf("Warning: Could not write parsed menu to debug file: %v", err)
 		} else {
 			fmt.Printf("Saved parsed menu to %s\n", parsedMenuDebugFile)
 		}
-	}
-
-	// Format JSON for output
-	var prettyJSON bytes.Buffer
-	if err := json.Indent(&prettyJSON, []byte(processedMenu), "", "  "); err != nil {
-		prettyJSON = *bytes.NewBufferString(processedMenu)
 	}
 
 	// Output the parsed menu
