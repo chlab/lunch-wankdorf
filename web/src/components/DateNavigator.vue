@@ -1,34 +1,20 @@
-<script>
-import { ref, computed } from 'vue';
-
-const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const currentDate = ref(new Date());
-const selectedDay = computed(() => {
-  return days[currentDate.value.getDay()];
+<script setup>
+const props = defineProps({
+  formattedDate: {
+    type: String,
+    required: true
+  }
 });
 
-// Format selected date for display using Swiss German locale
-const formattedDate = computed(() => {
-  return new Intl.DateTimeFormat('de-CH', { 
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  }).format(currentDate.value);
-});
+const emit = defineEmits(['dateBack', 'dateForward']);
 
-// Navigate to previous day
+// Simple navigation handlers that just emit events
 const goToPreviousDay = () => {
-  const newDate = new Date(currentDate.value);
-  newDate.setDate(newDate.getDate() - 1);
-  currentDate.value = newDate;
+  emit('dateBack');
 };
 
-// Navigate to next day
 const goToNextDay = () => {
-  const newDate = new Date(currentDate.value);
-  newDate.setDate(newDate.getDate() + 1);
-  currentDate.value = newDate;
+  emit('dateForward');
 };
 </script>
 <template>
@@ -43,7 +29,7 @@ const goToNextDay = () => {
     </button>
     <div>
       <h1 class="text-lg font-bold">Lunch Wankdorf</h1>
-      <p class="text-gray-600">{{ formattedDate }}</p>
+      <p class="text-gray-600">{{ props.formattedDate }}</p>
     </div>
     <button 
       @click="goToNextDay" 

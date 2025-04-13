@@ -1,14 +1,44 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import MenuItem from './components/MenuItem.vue';
 import Skeleton from './components/Skeleton.vue';
 import DateNavigator from './components/DateNavigator.vue';
 
 const menuUrl = 'https://pub-201cbf927f0b4c8991d32485a57b9d40.r2.dev/gira_20250413_171330.json';
+const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+// Current date and derived values
+const currentDate = ref(new Date());
+const selectedDay = ref(days[currentDate.value.getDay()]);
 const menu = ref({});
 const loading = ref(true);
 const error = ref(null);
+
+// Format the current date for display
+const formattedDate = computed(() => {
+  return new Intl.DateTimeFormat('de-CH', { 
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  }).format(currentDate.value);
+});
+
+// Navigate to previous day
+const goToPreviousDay = () => {
+  const newDate = new Date(currentDate.value);
+  newDate.setDate(newDate.getDate() - 1);
+  currentDate.value = newDate;
+  selectedDay.value = days[currentDate.value.getDay()];
+};
+
+// Navigate to next day
+const goToNextDay = () => {
+  const newDate = new Date(currentDate.value);
+  newDate.setDate(newDate.getDate() + 1);
+  currentDate.value = newDate;
+  selectedDay.value = days[currentDate.value.getDay()];
+};
 
 const loadMenu = async () => {
   try {
@@ -42,7 +72,11 @@ const restaurants = [
   <div class="min-h-screen flex flex-col">
     <!-- Sticky Header -->
     <header class="top-0 py-4 shadow-md z-10">
-      <DateNavigator />
+      <DateNavigator 
+        :formatted-date="formattedDate" 
+        @date-back="goToPreviousDay" 
+        @date-forward="goToNextDay" 
+      />
     </header>
 
     <!-- Main Content -->
