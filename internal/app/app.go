@@ -8,11 +8,16 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/chlab/lunch-wankdorf/pkg/ai"
+	"github.com/chlab/lunch-wankdorf/pkg/file"
+	"github.com/chlab/lunch-wankdorf/pkg/scraper"
 	"github.com/joho/godotenv"
-	"github.com/leuenbergerc/lunch-wankdorf/pkg/ai"
-	"github.com/leuenbergerc/lunch-wankdorf/pkg/file"
-	"github.com/leuenbergerc/lunch-wankdorf/pkg/scraper"
 )
 
 // RestaurantMenu defines a restaurant menu source
@@ -29,6 +34,11 @@ var restaurantMenus = map[string]RestaurantMenu{
 		URL:     "https://app.food2050.ch/de/sbb-gira/gira/menu/mittagsmenue/weekly",
 		BaseURL: "https://app.food2050.ch",
 	},
+	"luna": {
+		Name:    "Luna",
+		URL:     "https://app.food2050.ch/de/sbb-restaurant-luna/sbb-luna/menu/mittagsmenue/weekly",
+		BaseURL: "https://app.food2050.ch",
+	},
 }
 
 // Config holds application configuration settings
@@ -36,6 +46,7 @@ type Config struct {
 	DebugMode    bool   // If true, debug files will be written
 	DryRun       bool   // If true, no API calls will be made
 	RestaurantID string // ID of the restaurant to fetch menu from (defaults to "gira")
+	UploadToR2   bool   // If true, upload parsed menu to R2 storage
 }
 
 // Run starts the application
@@ -146,6 +157,15 @@ func Run(config Config) {
 	fmt.Println("\nWeekly Menu:")
 	fmt.Println("===========")
 	fmt.Println(prettyJSON.String())
+
+	// Upload to R2 if enabled
+	if config.UploadToR2 {
+		if err := uploadMenuToR2(processedMenu, restaurant.Name); err != nil {
+			log.Printf("Warning: Failed to upload menu to R2: %v", err)
+		} else {
+			fmt.Println("Successfully uploaded menu to R2 storage")
+		}
+	}
 }
 
 // processMenuLinks adds the restaurant's base URL to relative links in the menu
@@ -215,4 +235,50 @@ func loadEnv() {
 	}
 
 	log.Println("No .env file found, using environment variables if set")
+}
+
+// uploadMenuToR2 uploads the menu JSON to Cloudflare R2 storage
+func uploadMenuToR2(menuJSON string, restaurantName string) error {
+	// Check for required environment variables
+	accountID := os.Getenv("CLOUDFLARE_ACCOUNT_ID")
+	accessKeyID := os.Getenv("CLOUDFLARE_ACCESS_KEY_ID")
+	secretAccessKey := os.Getenv("CLOUDFLARE_SECRET_ACCESS_KEY")
+	bucketName := os.Getenv("CLOUDFLARE_BUCKET_NAME")
+
+	if accountID == "" || accessKeyID == "" || secretAccessKey == "" || bucketName == "" {
+		return fmt.Errorf("missing required Cloudflare R2 credentials in environment variables")
+	}
+
+	// Create an AWS session configured for Cloudflare R2
+	sess, err := session.NewSession(&aws.Config{
+		Credentials:      credentials.NewStaticCredentials(accessKeyID, secretAccessKey, ""),
+		Endpoint:         aws.String(fmt.Sprintf("https://%s.eu.r2.cloudflarestorage.com", accountID)),
+		Region:           aws.String("auto"),
+		S3ForcePathStyle: aws.Bool(true),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create AWS session: %v", err)
+	}
+
+	// Create an S3 service client
+	svc := s3.New(sess)
+
+	// Generate a filename with the restaurant name and current week number
+	// Format: <restaurantname>_<weeknumber>_<year>.json
+	year, week := time.Now().ISOWeek()
+	lowercaseRestaurantName := strings.ToLower(restaurantName)
+	filename := fmt.Sprintf("%s_%d_%d.json", lowercaseRestaurantName, week, year)
+
+	// Upload the file to R2
+	_, err = svc.PutObject(&s3.PutObjectInput{
+		Bucket:      aws.String(bucketName),
+		Key:         aws.String(filename),
+		Body:        strings.NewReader(menuJSON),
+		ContentType: aws.String("application/json"),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to upload file to R2: %v", err)
+	}
+
+	return nil
 }
