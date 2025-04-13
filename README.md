@@ -1,6 +1,13 @@
 # Lunch Wankdorf
 
-A Go application for fetching and parsing the weekly lunch menu from the Wankdorf restaurant using OpenAI.
+A Go application for fetching and parsing the weekly lunch menu from the Wankdorf restaurants using OpenAI.
+The result is published as a [little web app](https://chlab.github.io/lunch-wankdorf/).
+
+The project was hacked together in two evenings of vibe-coding, so don't judge my code too harshly.
+
+## Todo
+
+- [ ] Add support for Post Espace restaurant. This one is bit trickier since it's an Angular app and Colly doesn't render JS.
 
 ## Project Structure
 
@@ -12,11 +19,13 @@ This project follows the [Standard Go Project Layout](https://github.com/golang-
   - `/pkg/ai`: OpenAI API integration
   - `/pkg/scraper`: Web scraping functionality using Colly
 - `/scripts`: Scripts to perform various build, install, analysis, etc operations
+- `/web`: Vuejs frontend
 
 ## Requirements
 
 - Go 1.22 or later
 - OpenAI API key
+- Cloudflare R2 bucket with a `lunch-wankdorf` bucket and access key
 
 ## Running the application
 
@@ -29,12 +38,15 @@ This project follows the [Standard Go Project Layout](https://github.com/golang-
 2. Run the application:
    ```bash
    ./scripts/run.sh
+   # or
+   go run ./cmd/app/main.go -h
    ```
 
 The application will:
-1. Scrape the weekly menu from https://app.food2050.ch/de/sbb-gira/gira/menu/mittagsmenue/weekly
+1. Scrape the weekly menu from the three SBB restaurants
    - Uses Colly to extract only the relevant menu HTML content
 2. Send the targeted HTML content to OpenAI for parsing
-3. Display the structured menu data in JSON format with days of the week and menu options
+3. Parse the structured menu data in JSON format with days of the week and menu options
+4. Upload the structured menu data to a Cloudflare R2 bucket
 
-Note: The `.env` file is git-ignored to prevent accidentally committing your API key.
+The frontend app retrieves the structured menu data from the Cloudflare R2 bucket and displays it.
