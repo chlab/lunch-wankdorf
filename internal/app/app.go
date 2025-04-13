@@ -78,7 +78,7 @@ func Run(config Config) {
 	fmt.Println(preview)
 	fmt.Println("=============")
 
-	// Abort menu pars if dry run is enabled
+	// Abort menu parsing if dry run is enabled
 	if config.DryRun {
 		fmt.Println("Dry Run, aborting parsing menu...")
 		return
