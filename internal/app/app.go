@@ -14,14 +14,27 @@ import (
 	"github.com/leuenbergerc/lunch-wankdorf/pkg/scraper"
 )
 
-const (
-	menuURL = "https://app.food2050.ch/de/sbb-gira/gira/menu/mittagsmenue/weekly"
-)
+// RestaurantMenu defines a restaurant menu source
+type RestaurantMenu struct {
+	Name    string
+	URL     string
+	baseUrl string
+}
+
+// Available restaurant menus
+var restaurantMenus = map[string]RestaurantMenu{
+	"gira": {
+		Name:    "Gira",
+		URL:     "https://app.food2050.ch/de/sbb-gira/gira/menu/mittagsmenue/weekly",
+		baseUrl: "https://app.food2050.ch/",
+	},
+}
 
 // Config holds application configuration settings
 type Config struct {
-	DebugMode bool // If true, debug files will be written
-	DryRun    bool // If true, no API calls will be made
+	DebugMode    bool   // If true, debug files will be written
+	DryRun       bool   // If true, no API calls will be made
+	RestaurantID string // ID of the restaurant to fetch menu from (defaults to "gira")
 }
 
 // Run starts the application
@@ -29,9 +42,21 @@ func Run(config Config) {
 	// Load environment variables from .env file
 	loadEnv()
 
+	// Use default restaurant if none specified
+	restaurantID := config.RestaurantID
+	if restaurantID == "" {
+		restaurantID = "gira"
+	}
+
+	// Get restaurant menu configuration
+	restaurant, exists := restaurantMenus[restaurantID]
+	if !exists {
+		log.Fatalf("Restaurant with ID '%s' not found", restaurantID)
+	}
+
 	// Fetch the restaurant menu content
-	fmt.Println("Scraping menu data from", menuURL)
-	htmlContent, err := scraper.ScrapeMenuContent(menuURL)
+	fmt.Printf("Scraping menu data for %s from %s\n", restaurant.Name, restaurant.URL)
+	htmlContent, err := scraper.ScrapeMenuContent(restaurant.URL)
 	if err != nil {
 		log.Fatalf("Error scraping menu data: %v", err)
 	}
