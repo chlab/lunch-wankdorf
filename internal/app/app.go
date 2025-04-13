@@ -39,6 +39,11 @@ var restaurantMenus = map[string]RestaurantMenu{
 		URL:     "https://app.food2050.ch/de/sbb-restaurant-luna/sbb-luna/menu/mittagsmenue/weekly",
 		BaseURL: "https://app.food2050.ch",
 	},
+	"sole": {
+		Name:    "Sole",
+		URL:     "https://app.food2050.ch/de/sbb-sole/sole/menu/mittagsmenue/weekly",
+		BaseURL: "https://app.food2050.ch",
+	},
 }
 
 // Config holds application configuration settings
