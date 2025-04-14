@@ -9,6 +9,7 @@ The project was hacked together in two evenings of vibe-coding, so don't judge m
 
 - [ ] Add support for Post Espace restaurant. This one is bit trickier since it's an Angular app and Colly doesn't render JS. Also, each day is a different route, so the renderer would actually need to click around on the page.
 - [ ] Run the scraper in a nightly GitHub Action
+- [ ] Gzip the menus before uploading them to R2
 
 ## Project Structure
 
