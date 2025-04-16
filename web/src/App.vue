@@ -141,15 +141,27 @@ const filteredMenuItems = computed(() => {
     return [];
   }
   
-  if (!selectedRestaurant.value) {
-    // No restaurant selected, show all items
-    return menu.value[selectedDay.value];
+  if (selectedRestaurant.value) {
+    // Filter items for the selected restaurant
+    return menu.value[selectedDay.value].filter(
+      item => item.restaurant === selectedRestaurant.value
+    );
   }
   
-  // Filter items for the selected restaurant
-  return menu.value[selectedDay.value].filter(
-    item => item.restaurant === selectedRestaurant.value
-  );
+  // Group items by restaurant
+  const restaurantGroups = {};
+  menu.value[selectedDay.value].forEach(item => {
+    if (!restaurantGroups[item.restaurant]) {
+      restaurantGroups[item.restaurant] = [];
+    }
+    restaurantGroups[item.restaurant].push(item);
+  });
+  
+  // Get restaurant names and shuffle their order
+  const restaurants = Object.keys(restaurantGroups).sort(() => Math.random() - 0.5);
+  
+  // Concatenate all items by restaurant in the shuffled order
+  return restaurants.flatMap(restaurant => restaurantGroups[restaurant]);
 });
 
 onMounted(() => {
