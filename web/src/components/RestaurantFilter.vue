@@ -22,13 +22,23 @@ const selectRestaurant = (restaurant) => {
 };
 </script>
 
+<style scoped>
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+</style>
+
 <template>
-  <div class="flex max-w-md justify-between mx-auto mb-6" v-if="restaurants.length > 0">
-    <span></span>
-    <div class="flex space-x-2">
+  <div class="max-w-full mb-6 overflow-hidden" v-if="restaurants.length > 0">
+    <div class="flex md:justify-center space-x-2 overflow-x-auto pb-2 px-2 scrollbar-hide">
       <button 
         v-for="restaurant in restaurants"
-        class="flex px-3 py-1 rounded-full transition-colors cursor-pointer"
+        class="flex-shrink-0 flex px-3 py-1 rounded-full transition-colors cursor-pointer"
         :class="{
           'bg-gray-300 hover:bg-gray-400 hover:text-white': restaurant !== selectedRestaurant,
           'bg-rose-400 text-white': restaurant === selectedRestaurant
@@ -41,6 +51,5 @@ const selectRestaurant = (restaurant) => {
         <span class="text-xs ml-2">{{ restaurant }}</span>
       </button>
     </div>
-    <span></span>
   </div>
 </template>
