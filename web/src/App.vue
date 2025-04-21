@@ -24,6 +24,8 @@ const getMenuFiles = () => {
     luna: `luna_${weekNumber}_${year}.json`,
     sole: `sole_${weekNumber}_${year}.json`,
     espace: `espace_${weekNumber}_${year}.json`,
+    freibank: `freibank_${weekNumber}_${year}.json`,
+    turbolama: `turbolama_${weekNumber}_${year}.json`,
   };
 };
 
@@ -66,6 +68,8 @@ const loading = ref(true);
 const error = ref(null);
 const selectedRestaurant = ref('');
 const availableRestaurants = ref(['Foodtrucks']);
+// Identify weekly menus
+const weeklyRestaurants = ref([]);
 
 // Format the current date for display
 const formattedDate = computed(() => {
@@ -106,6 +110,7 @@ const goToNextDay = () => {
 const loadMenus = async () => {
   try {
     loading.value = true;
+    weeklyRestaurants.value = []; // Clear weekly restaurants
     const combinedMenu = {};
     
     // Create an array of promises for all fetch requests
@@ -130,43 +135,79 @@ const loadMenus = async () => {
     // Wait for all fetches to complete
     const results = await Promise.all(fetchPromises);
     
+    // Keep track of restaurant types for ordering
+    const dailyRestaurants = [];
+    const tempWeeklyRestaurants = [];
+    
     // Process the results and combine menus
     results.forEach(result => {
       if (!result) return;
       
       const { restaurant, data: menuData } = result;
       
-      // For each day in the menu
-      Object.keys(menuData).forEach(day => {
-        if (!combinedMenu[day]) {
-          combinedMenu[day] = [];
-        }
-        
-        // Add restaurant name to each menu item
-        const itemsWithRestaurant = menuData[day].map(item => ({
-          ...item,
-          restaurant: restaurant
-        }));
-        
-        // Add items to combined menu
-        combinedMenu[day] = [...combinedMenu[day], ...itemsWithRestaurant];
-      });
+      // Track restaurants by type
+      if (menuData.type === 'daily') {
+        dailyRestaurants.push(restaurant);
+      } else if (menuData.type === 'weekly') {
+        tempWeeklyRestaurants.push(restaurant);
+        weeklyRestaurants.value.push(restaurant);
+      }
       
-      // Extract restaurant name to add to available restaurants list
-      if (!availableRestaurants.value.includes(restaurant)) {
-        availableRestaurants.value.unshift(restaurant);
+      // Process based on menu type
+      if (menuData.type === 'daily' && menuData.menu) {
+        // For daily menus (organized by day)
+        Object.keys(menuData.menu).forEach(day => {
+          if (!combinedMenu[day]) {
+            combinedMenu[day] = [];
+          }
+          
+          // Add restaurant name to each menu item
+          const itemsWithRestaurant = menuData.menu[day].map(item => ({
+            ...item,
+            restaurant: restaurant
+          }));
+          
+          // Add items to combined menu
+          combinedMenu[day] = [...combinedMenu[day], ...itemsWithRestaurant];
+        });
+      } else if (menuData.type === 'weekly' && menuData.menu) {
+        // For weekly menus (same items all week)
+        // Add weekly menu items to all weekdays (Monday-Friday)
+        ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].forEach(day => {
+          if (!combinedMenu[day]) {
+            combinedMenu[day] = [];
+          }
+          
+          // Add restaurant name to each menu item and add to the combined menu
+          const itemsWithRestaurant = menuData.menu.map(item => ({
+            ...item,
+            restaurant: restaurant
+          }));
+          
+          // Add to combined menu (we'll sort later in the filteredMenuItems computed)
+          combinedMenu[day] = [...combinedMenu[day], ...itemsWithRestaurant];
+        });
       }
     });
     
     // Add static foodtrucks menu to combined menu
-    Object.keys(foodtrucksMenu).forEach(day => {
-      if (!combinedMenu[day]) {
-        combinedMenu[day] = [];
-      }
-      
-      // Add foodtrucks items to combined menu
-      combinedMenu[day] = [...combinedMenu[day], ...foodtrucksMenu[day]];
-    });
+    if (foodtrucksMenu.type === 'daily' && foodtrucksMenu.menu) {
+      Object.keys(foodtrucksMenu.menu).forEach(day => {
+        if (!combinedMenu[day]) {
+          combinedMenu[day] = [];
+        }
+        
+        // Add foodtrucks items to combined menu
+        combinedMenu[day] = [...combinedMenu[day], ...foodtrucksMenu.menu[day]];
+      });
+    }
+    
+    // Set restaurants in the correct order: daily first, then foodtrucks, then weekly
+    availableRestaurants.value = [
+      ...dailyRestaurants,
+      'Foodtrucks',
+      ...tempWeeklyRestaurants
+    ];
     
     menu.value = combinedMenu;
   } catch (err) {
@@ -204,11 +245,24 @@ const filteredMenuItems = computed(() => {
     restaurantGroups[item.restaurant].push(item);
   });
   
-  // Get restaurant names and shuffle their order
-  const restaurants = Object.keys(restaurantGroups).sort(() => Math.random() - 0.5);
+  // Use the order from availableRestaurants
+  // This ensures daily menus first, then foodtrucks, then weekly menus
+  const orderedRestaurants = availableRestaurants.value.filter(
+    restaurant => restaurantGroups[restaurant]
+  );
   
-  // Concatenate all items by restaurant in the shuffled order
-  return restaurants.flatMap(restaurant => restaurantGroups[restaurant]);
+  // Group restaurants by type based on the ordered list
+  const dailyRestaurants = orderedRestaurants.filter(r => r !== 'Foodtrucks' && !weeklyRestaurants.value.includes(r));
+  const foodtrucks = 'Foodtrucks';
+  const weeklyMenuRestaurants = orderedRestaurants.filter(r => weeklyRestaurants.value.includes(r));
+  
+  // Get items by restaurant type and sort randomly where needed
+  const dailyItems = dailyRestaurants.flatMap(r => restaurantGroups[r]).sort(() => Math.random() - 0.5);
+  const foodtruckItems = restaurantGroups[foodtrucks] || [];
+  const weeklyItems = weeklyMenuRestaurants.flatMap(r => restaurantGroups[r]).sort(() => Math.random() - 0.5);
+  
+  // Combine all items: daily first, then foodtrucks, then weekly
+  return [...dailyItems, ...foodtruckItems, ...weeklyItems];
 });
 
 // Handle popstate events (browser back/forward navigation)

@@ -13,7 +13,8 @@ The project was hacked together in two evenings of vibe-coding, so don't judge m
 - [x] Add all known foodtrucks in the frontend
 - [ ] Add Turbo Lama and maybe Freibank
 - [ ] Maybe generate icons for each menu item
-- [ ] Change the JSON structure of the menus to allow for daily and weekly menus
+- [x] Change the JSON structure of the menus to allow for daily and weekly menus
+- [ ] Consider adding the restaurant name to the menu instead of adding it in the frontend
 
 ## Project Structure
 
