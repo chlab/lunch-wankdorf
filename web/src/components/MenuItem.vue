@@ -28,7 +28,7 @@ defineProps({
 
 <style scoped>
 @media (max-width: 768px) {
-  .hide-restaurant-small .restaurant-label {
+  .is-restaurant-selected .restaurant-label {
     display: none;
   }
 }
