@@ -281,6 +281,7 @@ onUnmounted(() => {
           :link="item.link || ''"
           :restaurant="item.restaurant || ''"
           :foodtruck="item.foodtruck || ''"
+          :class="{ 'hide-restaurant-small': selectedRestaurant }"
         />
       </div>
       <!-- no items today -->
