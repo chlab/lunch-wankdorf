@@ -31,7 +31,7 @@ const selectRestaurant = (restaurant) => {
         class="flex px-3 py-1 rounded-full transition-colors cursor-pointer"
         :class="{
           'bg-gray-300 hover:bg-gray-400 hover:text-white': restaurant !== selectedRestaurant,
-          'bg-cyan-700 text-white': restaurant === selectedRestaurant
+          'bg-rose-400 text-white': restaurant === selectedRestaurant
         }"
         @click="selectRestaurant(restaurant)"
       >

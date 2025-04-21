@@ -21,7 +21,8 @@ const getMenuFiles = () => {
   return {
     gira: `gira_${weekNumber}_${year}.json`,
     luna: `luna_${weekNumber}_${year}.json`,
-    sole: `sole_${weekNumber}_${year}.json`
+    sole: `sole_${weekNumber}_${year}.json`,
+    espace: `espace_${weekNumber}_${year}.json`,
   };
 };
 
