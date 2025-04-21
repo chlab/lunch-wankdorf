@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
+	"strings"
 )
 
 // WriteString writes a string to a file
 func WriteString(content, fileName string) error {
+	fileName = strings.ToLower(fileName)
 	// Create the directory if it doesn't exist
 	dir := filepath.Dir(fileName)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -24,16 +25,21 @@ func WriteString(content, fileName string) error {
 }
 
 // WriteToDebugFile writes content to a debug file in the specified directory
-func WriteToDebugFile(content, label string) (string, error) {
+// The file will be named using the restaurant name and the specified filetype
+func WriteToDebugFile(content, label string, restaurantName string, fileType string) (string, error) {
 	// Create debug directory if it doesn't exist
 	debugDir := "debug"
 	if err := os.MkdirAll(debugDir, 0o755); err != nil {
 		return "", fmt.Errorf("failed to create debug directory: %w", err)
 	}
 
-	// Generate filename with timestamp
-	timestamp := time.Now().Format("20060102_150405")
-	fileName := filepath.Join(debugDir, fmt.Sprintf("%s_%s.txt", label, timestamp))
+	// Use default filetype if not specified
+	if fileType == "" {
+		fileType = "txt"
+	}
+
+	// Generate filename using restaurant name (overwrite existing files)
+	fileName := filepath.Join(debugDir, fmt.Sprintf("%s_%s.%s", restaurantName, label, fileType))
 
 	// Write the content to the file
 	if err := WriteString(content, fileName); err != nil {

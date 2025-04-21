@@ -54,7 +54,8 @@ func CreateCompletion(prompt string) (string, error) {
 
 // ParseRestaurantMenu sends HTML content to OpenAI to extract menu information
 func ParseRestaurantMenu(htmlContent string) (string, error) {
-	prompt := `Parse the following HTML extracted from a restaurant's weekly menu page. The text is in German. 
+	prompt := `Parse the following HTML extracted from a restaurant's weekly menu page. The text is in German.
+Be aware that a day may be empty due to a holiday or other reason. Important: The week starts on Monday and so does the menu.
 Return a JSON structure where the key is the day of the week in English  and the value is an array of menu options 
 for that day. Each menu option should have these keys:
 - name: The name of the dish

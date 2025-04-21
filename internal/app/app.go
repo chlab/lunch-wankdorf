@@ -22,27 +22,37 @@ import (
 
 // RestaurantMenu defines a restaurant menu source
 type RestaurantMenu struct {
-	Name    string
-	URL     string
-	BaseURL string
+	Name             string
+	URL              string
+	BaseURL          string
+	HasCustomScraper bool // Indicates if a custom scraping function should be used
 }
 
 // Available restaurant menus
 var restaurantMenus = map[string]RestaurantMenu{
 	"gira": {
-		Name:    "Gira",
-		URL:     "https://app.food2050.ch/de/sbb-gira/gira/menu/mittagsmenue/weekly",
-		BaseURL: "https://app.food2050.ch",
+		Name:             "Gira",
+		URL:              "https://app.food2050.ch/de/sbb-gira/gira/menu/mittagsmenue/weekly",
+		BaseURL:          "https://app.food2050.ch",
+		HasCustomScraper: false,
 	},
 	"luna": {
-		Name:    "Luna",
-		URL:     "https://app.food2050.ch/de/sbb-restaurant-luna/sbb-luna/menu/mittagsmenue/weekly",
-		BaseURL: "https://app.food2050.ch",
+		Name:             "Luna",
+		URL:              "https://app.food2050.ch/de/sbb-restaurant-luna/sbb-luna/menu/mittagsmenue/weekly",
+		BaseURL:          "https://app.food2050.ch",
+		HasCustomScraper: false,
 	},
 	"sole": {
-		Name:    "Sole",
-		URL:     "https://app.food2050.ch/de/sbb-sole/sole/menu/mittagsmenue/weekly",
-		BaseURL: "https://app.food2050.ch",
+		Name:             "Sole",
+		URL:              "https://app.food2050.ch/de/sbb-sole/sole/menu/mittagsmenue/weekly",
+		BaseURL:          "https://app.food2050.ch",
+		HasCustomScraper: false,
+	},
+	"espace": {
+		Name:             "Espace",
+		URL:              "https://web.sv-restaurant.ch/menu/Post,%20Restaurant%20Espace,%20Bern/Mittagsmen%C3%BC",
+		BaseURL:          "https://web.sv-restaurant.ch/menu/Post,%20Restaurant%20Espace,%20Bern/Mittagsmen%C3%BC",
+		HasCustomScraper: true,
 	},
 }
 
@@ -59,10 +69,9 @@ func Run(config Config) {
 	// Load environment variables from .env file
 	loadEnv()
 
-	// Use default restaurant if none specified
 	restaurantID := config.RestaurantID
 	if restaurantID == "" {
-		restaurantID = "gira"
+		log.Fatalf("Restaurant not defined")
 	}
 
 	// Get restaurant menu configuration
@@ -73,7 +82,22 @@ func Run(config Config) {
 
 	// Fetch the restaurant menu content
 	fmt.Printf("Scraping menu data for %s from %s\n", restaurant.Name, restaurant.URL)
-	htmlContent, err := scraper.ScrapeMenuContent(restaurant.URL)
+	var htmlContent *scraper.MenuData
+	var err error
+
+	if restaurant.HasCustomScraper {
+		// Use custom scraper based on restaurant name
+		switch strings.ToLower(restaurant.Name) {
+		case "espace":
+			htmlContent, err = scraper.ScrapeEspaceWebsite(restaurant.URL, config.DebugMode)
+		default:
+			err = fmt.Errorf("no custom scraper found for restaurant %s", restaurant.Name)
+		}
+	} else {
+		// Use standard scraper
+		htmlContent, err = scraper.ScrapeMenuContent(restaurant.URL, config.DebugMode)
+	}
+
 	if err != nil {
 		log.Fatalf("Error scraping menu data: %v", err)
 	}
@@ -81,7 +105,7 @@ func Run(config Config) {
 	// Save debug files if debug mode is enabled
 	if config.DebugMode {
 		// Save raw HTML content to debug file
-		htmlDebugFile, err := file.WriteToDebugFile(htmlContent.Content, "raw_html")
+		htmlDebugFile, err := file.WriteToDebugFile(htmlContent.Content, "raw_html", restaurant.Name, "html")
 		if err != nil {
 			log.Printf("Warning: Could not write raw HTML to debug file: %v", err)
 		} else {
@@ -95,7 +119,7 @@ func Run(config Config) {
 	// Save debug files if debug mode is enabled
 	if config.DebugMode {
 		// Save extracted menu content to debug file
-		menuContentDebugFile, err := file.WriteToDebugFile(menuData, "menu_content")
+		menuContentDebugFile, err := file.WriteToDebugFile(menuData, "menu_content", restaurant.Name, "html")
 		if err != nil {
 			log.Printf("Warning: Could not write menu content to debug file: %v", err)
 		} else {
@@ -130,7 +154,7 @@ func Run(config Config) {
 	fmt.Println("Parsing menu data with OpenAI...")
 	parsedMenu, err := ai.ParseRestaurantMenu(menuData)
 	if err != nil {
-		file.WriteToDebugFile(parsedMenu, "parsed_menu")
+		file.WriteToDebugFile(parsedMenu, "parsed_menu", restaurant.Name, "json")
 		log.Fatalf("Error parsing menu data: %v", err)
 	}
 
@@ -150,7 +174,7 @@ func Run(config Config) {
 	// Save debug files if debug mode is enabled
 	if config.DebugMode {
 		// Save parsed menu to debug file
-		parsedMenuDebugFile, err := file.WriteToDebugFile(prettyJSON.String(), "parsed_menu")
+		parsedMenuDebugFile, err := file.WriteToDebugFile(prettyJSON.String(), "parsed_menu", restaurant.Name, "json")
 		if err != nil {
 			log.Printf("Warning: Could not write parsed menu to debug file: %v", err)
 		} else {
