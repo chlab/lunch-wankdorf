@@ -13,6 +13,7 @@ require (
 	github.com/gocolly/colly/v2 v2.2.0
 	github.com/joho/godotenv v1.5.1
 	github.com/tdewolff/minify/v2 v2.23.1
+	rsc.io/pdf v0.1.1
 )
 
 require (
@@ -35,6 +36,7 @@ require (
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/nlnwa/whatwg-url v0.6.1 // indirect
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
+	github.com/stretchr/testify v1.10.0 // indirect
 	github.com/tdewolff/parse/v2 v2.7.23 // indirect
 	github.com/temoto/robotstxt v1.1.2 // indirect
 	golang.org/x/net v0.37.0 // indirect
@@ -42,4 +44,5 @@ require (
 	golang.org/x/text v0.23.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
