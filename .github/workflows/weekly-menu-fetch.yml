@@ -10,6 +10,9 @@ jobs:
   fetch-menus:
     name: Fetch Restaurant Menus
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/chromedp/headless-shell:latest
+      options: --shm-size=2g
     
     steps:
       - name: Checkout code
@@ -44,6 +47,15 @@ jobs:
       
       - name: Fetch Sole menu
         run: ./lunch-app --restaurant sole --upload
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_ACCESS_KEY_ID }}
+          CLOUDFLARE_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_BUCKET_NAME: ${{ secrets.CLOUDFLARE_BUCKET_NAME }}
+          
+      - name: Fetch Espace menu
+        run: ./lunch-app --restaurant espace --upload
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
