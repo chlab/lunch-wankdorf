@@ -1,10 +1,11 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import MenuItem from './components/MenuItem.vue';
 import Skeleton from './components/Skeleton.vue';
 import DateNavigator from './components/DateNavigator.vue';
 import RestaurantFilter from './components/RestaurantFilter.vue';
-import { getISOWeekNumber } from './util/date'
+import { getISOWeekNumber } from './util/date';
+import foodtrucksMenu from './foodtrucks.json';
 
 const baseUrl = 'https://pub-201cbf927f0b4c8991d32485a57b9d40.r2.dev';
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -27,15 +28,44 @@ const getMenuFiles = () => {
 };
 
 const menuFiles = getMenuFiles();
+// Function to get day name from URL or current date
+const getDayFromURL = () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const dayParam = urlParams.get('day');
+  
+  if (dayParam && days.includes(dayParam)) {
+    return dayParam;
+  }
+  
+  // Default to current day
+  const now = new Date();
+  return days[now.getDay()];
+};
+
+// Function to update URL with current day
+const updateURLWithDay = (day) => {
+  const url = new URL(window.location);
+  url.searchParams.set('day', day);
+  window.history.pushState({}, '', url);
+};
 
 // Current date and derived values
+const selectedDay = ref(getDayFromURL());
 const currentDate = ref(new Date());
-const selectedDay = ref(days[currentDate.value.getDay()]);
+// Adjust current date to match selected day
+const dayIndex = days.indexOf(selectedDay.value);
+if (dayIndex !== -1 && dayIndex !== currentDate.value.getDay()) {
+  const diff = dayIndex - currentDate.value.getDay();
+  const newDate = new Date(currentDate.value);
+  newDate.setDate(newDate.getDate() + diff);
+  currentDate.value = newDate;
+}
+
 const menu = ref({});
 const loading = ref(true);
 const error = ref(null);
 const selectedRestaurant = ref('');
-const availableRestaurants = ref([]);
+const availableRestaurants = ref(['Foodtrucks']);
 
 // Format the current date for display
 const formattedDate = computed(() => {
@@ -53,6 +83,9 @@ const goToPreviousDay = () => {
   newDate.setDate(newDate.getDate() - 1);
   currentDate.value = newDate;
   selectedDay.value = days[currentDate.value.getDay()];
+  
+  // Update URL with new day
+  updateURLWithDay(selectedDay.value);
 };
 
 // Navigate to next day
@@ -64,6 +97,9 @@ const goToNextDay = () => {
   newDate.setDate(newDate.getDate() + 1);
   currentDate.value = newDate;
   selectedDay.value = days[currentDate.value.getDay()];
+  
+  // Update URL with new day
+  updateURLWithDay(selectedDay.value);
 };
 
 // Load all menus and combine them
@@ -118,8 +154,18 @@ const loadMenus = async () => {
       
       // Extract restaurant name to add to available restaurants list
       if (!availableRestaurants.value.includes(restaurant)) {
-        availableRestaurants.value.push(restaurant);
+        availableRestaurants.value.unshift(restaurant);
       }
+    });
+    
+    // Add static foodtrucks menu to combined menu
+    Object.keys(foodtrucksMenu).forEach(day => {
+      if (!combinedMenu[day]) {
+        combinedMenu[day] = [];
+      }
+      
+      // Add foodtrucks items to combined menu
+      combinedMenu[day] = [...combinedMenu[day], ...foodtrucksMenu[day]];
     });
     
     menu.value = combinedMenu;
@@ -165,8 +211,36 @@ const filteredMenuItems = computed(() => {
   return restaurants.flatMap(restaurant => restaurantGroups[restaurant]);
 });
 
+// Handle popstate events (browser back/forward navigation)
+const handlePopState = () => {
+  const newDay = getDayFromURL();
+  if (newDay !== selectedDay.value) {
+    selectedDay.value = newDay;
+    
+    // Update current date to match the day from URL
+    const dayIndex = days.indexOf(selectedDay.value);
+    if (dayIndex !== -1) {
+      const now = new Date();
+      const todayIndex = now.getDay();
+      const diff = dayIndex - todayIndex;
+      
+      const newDate = new Date(now);
+      newDate.setDate(newDate.getDate() + diff);
+      currentDate.value = newDate;
+    }
+  }
+};
+
 onMounted(() => {
   loadMenus();
+  
+  // Add event listener for browser navigation
+  window.addEventListener('popstate', handlePopState);
+});
+
+// Clean up event listener when component is unmounted
+onUnmounted(() => {
+  window.removeEventListener('popstate', handlePopState);
 });
 </script>
 <template>
@@ -206,6 +280,7 @@ onMounted(() => {
           :type="item.type"
           :link="item.link || ''"
           :restaurant="item.restaurant || ''"
+          :foodtruck="item.foodtruck || ''"
         />
       </div>
       <!-- no items today -->
