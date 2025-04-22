@@ -10,6 +10,14 @@
         "restaurant": "Foodtrucks",
         "foodtruck": "Gabriele",
         "link": "https://www.gabriele-streetfood.ch/"
+      },
+      {
+        "name": "Tacos",
+        "description": "Tacos, Essen, Getränke und Produkte aus Mexiko",
+        "type": "",
+        "restaurant": "Foodtrucks",
+        "foodtruck": "Provecho Wey",
+        "link": "https://www.instagram.com/provecho_wey/"
       }
     ],
     "Wednesday": [
