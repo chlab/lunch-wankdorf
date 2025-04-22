@@ -4,8 +4,16 @@
     "Monday": [],
     "Tuesday": [
       {
-        "name": "Homemade Pasta",
-        "description": "Hausgemachte Pasta mit verschiedenen Saucen",
+        "name": "Homemade Pasta oder Gnocchi",
+        "description": "Hausgemachte Pasta oder Gnocchi mit verschiedenen Saucen",
+        "type": "",
+        "restaurant": "Foodtrucks",
+        "foodtruck": "Gabriele",
+        "link": "https://www.gabriele-streetfood.ch/"
+      },
+      {
+        "name": "Lasagne",
+        "description": "Hausgemachte Lasagne",
         "type": "",
         "restaurant": "Foodtrucks",
         "foodtruck": "Gabriele",
@@ -13,7 +21,15 @@
       },
       {
         "name": "Tacos",
-        "description": "Tacos, Essen, Getränke und Produkte aus Mexiko",
+        "description": "Tacos Aztecas, Norteños oder Veganismos",
+        "type": "",
+        "restaurant": "Foodtrucks",
+        "foodtruck": "Provecho Wey",
+        "link": "https://www.instagram.com/provecho_wey/"
+      },
+      {
+        "name": "Quesadilla",
+        "description": "Quesadilla a Maria oder Mayas",
         "type": "",
         "restaurant": "Foodtrucks",
         "foodtruck": "Provecho Wey",
