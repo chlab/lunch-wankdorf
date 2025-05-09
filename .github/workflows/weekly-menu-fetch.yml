@@ -12,7 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: chlab/lunch-wankdorf:latest
-      options: --shm-size=2g
 
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
