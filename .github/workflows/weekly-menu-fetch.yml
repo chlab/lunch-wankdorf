@@ -11,7 +11,7 @@ jobs:
     name: Fetch Restaurant Menus
     runs-on: ubuntu-latest
     container:
-      image: chromedp/headless-shell:stable
+      image: chlab/lunch-wankdorf:latest
       options: --shm-size=2g
     
     steps:
