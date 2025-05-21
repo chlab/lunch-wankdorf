@@ -25,7 +25,7 @@ func CreateCompletion(prompt string) (string, error) {
 	}
 
 	client := openai.NewClient(apiKey)
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
 	req := openai.ChatCompletionRequest{
@@ -79,7 +79,7 @@ func validateJSON(result string) (string, error) {
 func ParseRestaurantHtmlMenu(htmlContent string) (string, error) {
 	prompt := `Parse the following HTML extracted from a restaurant's weekly menu page. The text is in German.
 Be aware that a day may be empty due to a holiday or other reason. Important: The week starts on Monday and so does the menu.
-Return a JSON structure where the key is the day of the week in English  and the value is an array of menu options 
+Return a JSON structure where the key is the day of the week in English  and the value is an array of menu options
 for that day. Each menu option should have these keys:
 - name: The name of the dish
 - description: A description of the dish
@@ -93,19 +93,19 @@ Here is the extracted HTML of the menu:
 	if err != nil {
 		return "", fmt.Errorf("failed to parse menu: %w", err)
 	}
-	
+
 	// Validate the JSON
 	cleanedJSON, err := validateJSON(result)
 	if err != nil {
 		return "", err
 	}
-	
+
 	// Parse the days of the week structure
 	var dailyMenu map[string]interface{}
 	if err := json.Unmarshal([]byte(cleanedJSON), &dailyMenu); err != nil {
 		return "", fmt.Errorf("failed to parse menu JSON: %w", err)
 	}
-	
+
 	// Create the new structure
 	finalMenu := struct {
 		Type string                 `json:"type"`
@@ -114,19 +114,19 @@ Here is the extracted HTML of the menu:
 		Type: "daily",
 		Menu: dailyMenu,
 	}
-	
+
 	// Convert back to JSON
 	finalJSON, err := json.Marshal(finalMenu)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal final menu: %w", err)
 	}
-	
+
 	return string(finalJSON), nil
 }
 
 // ParseRestaurantPdfMenu sends extracted text from a PDF to OpenAI to extract menu information
 func ParseRestaurantPdfMenu(extractedText string, restaurantName string, pdfURL string) (string, error) {
-	prompt := `Parse the following extracted text from a restaurant's menu PDF. 
+	prompt := `Parse the following extracted text from a restaurant's menu PDF.
 Return a JSON structure with an array of menu options. Each menu option should have these keys:
 - name: The name of the dish
 - description: A description of the dish
