@@ -10,8 +10,6 @@ jobs:
   fetch-menus:
     name: Fetch Restaurant Menus
     runs-on: ubuntu-latest
-    container:
-      image: chlab/lunch-wankdorf:latest
 
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -37,19 +35,12 @@ jobs:
         run: go build -o lunch-app ./cmd/app/main.go
       
       - name: Fetch Gira menu
-        run: ./lunch-app -restaurant gira -upload
-      
-      - name: Fetch Luna menu
-        run: ./lunch-app -restaurant luna -upload
-      
-      - name: Fetch Sole menu
-        run: ./lunch-app -restaurant sole -upload
-          
-      - name: Fetch Espace menu
-        run: ./lunch-app -restaurant espace -upload
-          
-      - name: Fetch Freibank menu
-        run: ./lunch-app -restaurant freibank -upload
-          
-      - name: Fetch Turbolama menu
-        run: ./lunch-app -restaurant turbolama -upload
+        run: |
+          docker run --rm \
+            -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
+            -e CLOUDFLARE_ACCOUNT_ID=${{ secrets.CLOUDFLARE_ACCOUNT_ID }} \
+            -e CLOUDFLARE_ACCESS_KEY_ID=${{ secrets.CLOUDFLARE_ACCESS_KEY_ID }} \
+            -e CLOUDFLARE_SECRET_ACCESS_KEY=${{ secrets.CLOUDFLARE_SECRET_ACCESS_KEY }} \
+            -e CLOUDFLARE_BUCKET_NAME=${{ secrets.CLOUDFLARE_BUCKET_NAME }} \
+            chlab/lunch-wankdorf:latest \
+            -restaurant gira -upload
