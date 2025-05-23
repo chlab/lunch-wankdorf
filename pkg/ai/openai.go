@@ -86,6 +86,7 @@ for that day. Each menu option should have these keys:
 - type: The type of dish (vegetarian, meat, etc.)
 - link: A link to the dish on the restaurant's website
 Format your response as clean, properly formatted JSON only, with no explanations or additional text.
+Remove any double commas or other formatting issues from the description but don't change the content.
 Here is the extracted HTML of the menu:
 ` + htmlContent
 
@@ -116,6 +117,7 @@ Here is the extracted HTML of the menu:
 	}
 
 	// Convert back to JSON
+	// TODO: don't convert back to JSON
 	finalJSON, err := json.Marshal(finalMenu)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal final menu: %w", err)
