@@ -143,6 +143,7 @@ func ScrapeEspaceWebsite(url string, debug bool) (*MenuData, error) {
 		chromedp.NoDefaultBrowserCheck,
 		chromedp.DisableGPU,
 		chromedp.WindowSize(1280, 800),
+		chromedp.NoSandbox, // not available on CI
 	}
 
 	// Don't run in headless mode if debug mode is enabled
@@ -189,7 +190,6 @@ func ScrapeEspaceWebsite(url string, debug bool) (*MenuData, error) {
 		chromedp.Click(`#cookiescript_reject`, chromedp.ByQuery),
 		chromedp.Sleep(2*time.Second),
 	)
-
 	if err != nil {
 		if debug {
 			fmt.Printf("Error during initial page setup: %v\n", err)
@@ -212,7 +212,6 @@ func ScrapeEspaceWebsite(url string, debug bool) (*MenuData, error) {
 			// Extract the menu HTML
 			chromedp.OuterHTML(`app-menu-container`, &dayMenu),
 		)
-
 		if err != nil {
 			if debug {
 				fmt.Printf("Error scraping %s menu: %v\n", dayName, err)
