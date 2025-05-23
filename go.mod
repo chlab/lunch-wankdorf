@@ -4,7 +4,7 @@ go 1.23.0
 
 toolchain go1.23.8
 
-require github.com/sashabaranov/go-openai v1.38.1
+require github.com/sashabaranov/go-openai v1.39.1
 
 require (
 	github.com/aws/aws-sdk-go v1.55.6
