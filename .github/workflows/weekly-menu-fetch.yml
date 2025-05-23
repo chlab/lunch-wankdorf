@@ -35,6 +35,7 @@ jobs:
       - name: Fetch Gira menu
         run: |
           docker run --rm --platform linux/amd64 \
+            --entrypoint /app/lunch-app \
             -v ${{ github.workspace }}/lunch-app:/app/lunch-app \
             -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
             -e CLOUDFLARE_ACCOUNT_ID=${{ secrets.CLOUDFLARE_ACCOUNT_ID }} \
@@ -42,4 +43,4 @@ jobs:
             -e CLOUDFLARE_SECRET_ACCESS_KEY=${{ secrets.CLOUDFLARE_SECRET_ACCESS_KEY }} \
             -e CLOUDFLARE_BUCKET_NAME=${{ secrets.CLOUDFLARE_BUCKET_NAME }} \
             chlab/lunch-wankdorf:latest \
-            /app/lunch-app -restaurant gira -upload
+            -restaurant gira -upload
