@@ -1,0 +1,26 @@
+name: Weekly Menu Prune
+
+on:
+  schedule:
+    - cron: '0 23 * * 0'  # Every Sunday at 11 PM UTC
+  workflow_dispatch:
+
+jobs:
+  prune-old-menus:
+    name: Prune Old Menu Files
+    runs-on: ubuntu-latest
+
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_ACCESS_KEY_ID }}
+      CLOUDFLARE_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_SECRET_ACCESS_KEY }}
+      CLOUDFLARE_BUCKET_NAME: ${{ secrets.CLOUDFLARE_BUCKET_NAME }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run pruning script
+        run: |
+          chmod +x ./scripts/prune-menus.sh
+          bash ./scripts/prune-menus.sh --yes
