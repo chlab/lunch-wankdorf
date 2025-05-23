@@ -2,14 +2,17 @@ name: Weekly Menu Fetch
 
 on:
   schedule:
-    # Run at 5 AM every Monday
     - cron: '0 5 * * 1'
-  workflow_dispatch: # Allow manual triggering
+  workflow_dispatch:
 
 jobs:
   fetch-menus:
-    name: Fetch Restaurant Menus
+    name: Fetch Menu for ${{ matrix.restaurant }}
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        restaurant: [gira, luna, sole, espace, freibank, turbolama]
 
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -22,17 +25,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: '1.24'
           cache: true
-      
+
       - name: Build application
         run: GOARCH=amd64 GOOS=linux go build -o lunch-app ./cmd/app/main.go
-      
-      - name: Fetch Gira menu
+
+      - name: Run binary inside container with chromedp
         run: |
           docker run --rm --platform linux/amd64 \
             --entrypoint /app/lunch-app \
@@ -43,4 +45,4 @@ jobs:
             -e CLOUDFLARE_SECRET_ACCESS_KEY=${{ secrets.CLOUDFLARE_SECRET_ACCESS_KEY }} \
             -e CLOUDFLARE_BUCKET_NAME=${{ secrets.CLOUDFLARE_BUCKET_NAME }} \
             chlab/lunch-wankdorf:latest \
-            -restaurant gira -upload
+            -restaurant ${{ matrix.restaurant }} -upload
