@@ -30,11 +30,11 @@ jobs:
           cache: true
       
       - name: Build application
-        run: go build -o lunch-app ./cmd/app/main.go
+        run: GOARCH=amd64 GOOS=linux go build -o lunch-app ./cmd/app/main.go
       
       - name: Fetch Gira menu
         run: |
-          docker run --rm \
+          docker run --rm --platform linux/amd64 \
             -v ${{ github.workspace }}/lunch-app:/app/lunch-app \
             -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
             -e CLOUDFLARE_ACCOUNT_ID=${{ secrets.CLOUDFLARE_ACCOUNT_ID }} \
