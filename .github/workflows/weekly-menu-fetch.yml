@@ -42,4 +42,4 @@ jobs:
             -e CLOUDFLARE_SECRET_ACCESS_KEY=${{ secrets.CLOUDFLARE_SECRET_ACCESS_KEY }} \
             -e CLOUDFLARE_BUCKET_NAME=${{ secrets.CLOUDFLARE_BUCKET_NAME }} \
             chlab/lunch-wankdorf:latest \
-            -restaurant gira -upload
+            /app/lunch-app -restaurant gira -upload
