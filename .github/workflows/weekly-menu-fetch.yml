@@ -22,8 +22,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Update CA certificates
-        run: apt-get install --reinstall ca-certificates
 
       - name: Set up Go
         uses: actions/setup-go@v4
@@ -37,6 +35,7 @@ jobs:
       - name: Fetch Gira menu
         run: |
           docker run --rm \
+            -v ${{ github.workspace }}/lunch-app:/app/lunch-app \
             -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
             -e CLOUDFLARE_ACCOUNT_ID=${{ secrets.CLOUDFLARE_ACCOUNT_ID }} \
             -e CLOUDFLARE_ACCESS_KEY_ID=${{ secrets.CLOUDFLARE_ACCESS_KEY_ID }} \
