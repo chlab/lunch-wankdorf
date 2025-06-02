@@ -7,6 +7,7 @@
         "name": "Homemade Pasta oder Gnocchi",
         "description": "Hausgemachte Pasta oder Gnocchi mit verschiedenen Saucen",
         "type": "",
+        "icon": "spaghetti",
         "restaurant": "Foodtrucks",
         "foodtruck": "Gabriele",
         "link": "https://www.gabriele-streetfood.ch/"
@@ -15,6 +16,7 @@
         "name": "Lasagne",
         "description": "Hausgemachte Lasagne",
         "type": "",
+        "icon": "lasagna-sheets",
         "restaurant": "Foodtrucks",
         "foodtruck": "Gabriele",
         "link": "https://www.gabriele-streetfood.ch/"
@@ -23,6 +25,7 @@
         "name": "Tacos",
         "description": "Tacos Aztecas, Norteños oder Veganismos",
         "type": "",
+        "icon": "taco",
         "restaurant": "Foodtrucks",
         "foodtruck": "Provecho Wey",
         "link": "https://www.instagram.com/provecho_wey/"
@@ -31,6 +34,7 @@
         "name": "Quesadilla",
         "description": "Quesadilla a Maria oder Mayas",
         "type": "",
+        "icon": "wrap",
         "restaurant": "Foodtrucks",
         "foodtruck": "Provecho Wey",
         "link": "https://www.instagram.com/provecho_wey/"
@@ -41,6 +45,7 @@
         "name": "Bánh Mì - vietnamesisches Sandwich",
         "description": "Baguette gefüllt mit grilliertem Fleisch oder Tofu, selbstgemachter Mayo und Paté, Gurken und in Essig eingelegtem Rüebli-Rettich-Gemüse.",
         "type": "",
+        "icon": "sandwich",
         "restaurant": "Foodtrucks",
         "foodtruck": "Mê",
         "link": "https://mevietnam.ch/"
@@ -49,6 +54,7 @@
         "name": "Bún Bò Xào Sả - mariniertes Rindfleisch mit Reisnudeln",
         "description": "Kurz angebratenes Rindfleisch, mariniert mit Zitronengras an einer würzigen Sauce - dazu farbiges Gemüse, frische Kräuter und Erdnüsse.",
         "type": "meat",
+        "icon": "bento",
         "restaurant": "Foodtrucks",
         "foodtruck": "Mê",
         "link": "https://mevietnam.ch/"
@@ -57,6 +63,7 @@
         "name": "Gỏi Cuốn - Sommerrollen",
         "description": "Crevetten, Schweinefleisch, Salat und Reisnudeln in Reispapier eingerollt.",
         "type": "meat",
+        "icon": "korean-rice-cake",
         "restaurant": "Foodtrucks",
         "foodtruck": "Mê",
         "link": "https://mevietnam.ch/"
@@ -67,6 +74,7 @@
         "name": "Pulled Pork Sandwich",
         "description": "Verzupfter Schweinehals aus dem BBQ-Smoker im Burger-Brötchen",
         "type": "meat",
+        "icon": "burger",
         "restaurant": "Foodtrucks",
         "foodtruck": "Firechefs",
         "link": "https://firechefs-streetfood.ch/"
@@ -75,6 +83,7 @@
         "name": "Grilled Chicken Sandwich",
         "description": "Pouletschenkelsteak mit Haus Gewürzmischung im Burger-Brötchen",
         "type": "meat",
+        "icon": "burger",
         "restaurant": "Foodtrucks",
         "foodtruck": "Firechefs",
         "link": "https://firechefs-streetfood.ch/"
@@ -83,6 +92,7 @@
         "name": "Pumpkin & Blue Cheese Sandwich",
         "description": "Geschmorter Kürbis mit Blue Cheese im Burger-Brötchen",
         "type": "vegetarian",
+        "icon": "burger",
         "restaurant": "Foodtrucks",
         "foodtruck": "Firechefs",
         "link": "https://firechefs-streetfood.ch/"
@@ -91,6 +101,7 @@
         "name": "Superbowl",
         "description": "Fleisch oder Vegi, Cole Slaw Salat, Mac & Cheese Ball, Saucen & Pickles",
         "type": "",
+        "icon": "rice-bowl",
         "restaurant": "Foodtrucks",
         "foodtruck": "Firechefs",
         "link": "https://firechefs-streetfood.ch/"
@@ -99,6 +110,7 @@
         "name": "Fleisch Pita",
         "description": "Gyros, Souvlaki oder Panseta Pita mit Zwiebeln, Tomaten, Pommes und Sauce nach Wahl",
         "type": "",
+        "icon": "wrap",
         "restaurant": "Foodtrucks",
         "foodtruck": "Greek Spot",
         "link": "https://www.greekspot.ch/menu"
@@ -107,6 +119,7 @@
         "name": "Halloumi Pita",
         "description": "Halloumi Pita mit Zwiebeln, Tomaten, Pommes und Sauce nach Wahl",
         "type": "vegetarian",
+        "icon": "wrap",
         "restaurant": "Foodtrucks",
         "foodtruck": "Greek Spot",
         "link": "https://www.greekspot.ch/menu"
@@ -115,6 +128,7 @@
         "name": "Griechischer Salat",
         "description": "Tomaten, Gurken, Zwiebeln, Peperoni, Kalamata-Oliven, Feta-Käse, Oregano, Ölivenöl und griechischer Weinessig",
         "type": "vegetarian",
+        "icon": "salad",
         "restaurant": "Foodtrucks",
         "foodtruck": "Greek Spot",
         "link": "https://www.greekspot.ch/menu"
@@ -123,6 +137,7 @@
         "name": "Teller",
         "description": "Gyros, Souvlaki, Panseta oder Grill-Mix Teller mit Zwiebeln, Tomaten, Pommes und Sauce nach Wahl",
         "type": "",
+        "icon": "steak",
         "restaurant": "Foodtrucks",
         "foodtruck": "Greek Spot",
         "link": "https://www.greekspot.ch/menu"

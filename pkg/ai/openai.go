@@ -25,7 +25,7 @@ func CreateCompletion(prompt string) (string, error) {
 	}
 
 	client := openai.NewClient(apiKey)
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 
 	req := openai.ChatCompletionRequest{
@@ -84,7 +84,9 @@ for that day. Each menu option should have these keys:
 - name: The name of the dish
 - description: A description of the dish
 - type: The type of dish (vegetarian, meat, etc.)
+- icon: The name of the icon that fits the dish best. Very important: must be an exact match of the icons mentioned below. There may be a hint in parentheses which isn't part of the icon name. Use the menu item name first and the description second to determine the icon.
 - link: A link to the dish on the restaurant's website
+List of icons: bento, dumplings (ravioli, gnocchi, tortellini, asian dumplings), miso-soup (asian-style soup), noodles (asian), paella, rice-bowl, salad, seafood, spaghetti (pasta), sushi, french-fries, fried-chicken, hamburger, hot-dog, nachos, pizza, sandwich, taco, wrap, curry (only curries), lasagna-sheets, steak-rare (various red meat cuts), steak (grill, bbq), sausage, vegan-food (vegetarian bowls), rack-of-lamb
 Format your response as clean, properly formatted JSON only, with no explanations or additional text.
 Remove any double commas or other formatting issues from the description but don't change the content.
 Here is the extracted HTML of the menu:
@@ -133,7 +135,9 @@ Return a JSON structure with an array of menu options. Each menu option should h
 - name: The name of the dish
 - description: A description of the dish
 - type: The type of dish (vegetarian, meat, etc.)
-Only include food, ignore drinks.
+- icon: The name of the icon that fits the dish best. Very important: must be an exact match of the icons mentioned below. There may be a hint in parentheses which isn't part of the icon name. Use the menu item name first and the description second to determine the icon.
+List of icons: bento, dumplings (ravioli, gnocchi, tortellini, asian dumplings), miso-soup (asian-style soup), noodles (asian), paella, rice-bowl, salad, seafood, spaghetti (pasta), sushi, french-fries, fried-chicken, hamburger, hot-dog, nachos, pizza, sandwich, taco, wrap, curry (only curries), lasagna-sheets, steak-rare (various red meat cuts), steak (grill, bbq), sausage, vegan-food (vegetarian bowls), rack-of-lamb
+Only include food, ignore drinks. If not specified otherwise, assume Turbolama are vegan bowls.
 Format your response as clean, properly formatted JSON only, with no explanations or additional text.
 
 Extracted PDF content:

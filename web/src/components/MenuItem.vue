@@ -1,5 +1,7 @@
 <script setup>
-defineProps({
+import { computed } from 'vue'
+
+const props = defineProps({
   name: {
     type: String,
     required: true
@@ -15,6 +17,9 @@ defineProps({
   link: {
     type: String
   },
+  icon: {
+    type: String
+  },
   restaurant: {
     type: String,
     default: ""
@@ -24,6 +29,11 @@ defineProps({
     default: ""
   }
 });
+
+const iconCdnUrl = computed(() => {
+  return props.icon ? `https://img.icons8.com/plasticine/200/${props.icon}.png` : '';
+})
+
 </script>
 
 <style scoped>
@@ -40,7 +50,12 @@ defineProps({
       <div class="flex items-center">
         <h3 class="font-medium">{{ name }}</h3>
       </div>
-      <p class="text-gray-600 mt-1">{{ description }}</p>
+      <div class="flex items-start gap-3 mt-1">
+        <div v-if="icon" class="w-12 h-12 bg-gray-200 rounded-full flex-shrink-0 flex items-center justify-center">
+          <img :src="iconCdnUrl" :alt="`${props.icon} icon`" />
+        </div>
+        <p class="text-gray-600">{{ description }}</p>
+      </div>
       <div class="mt-4 flex gap-2">
         <div v-if="restaurant" class="flex px-3 py-1 bg-gray-200 rounded-full">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">

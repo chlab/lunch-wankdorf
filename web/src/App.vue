@@ -333,6 +333,7 @@ onUnmounted(() => {
           :description="item.description" 
           :type="item.type"
           :link="item.link || ''"
+          :icon="item.icon || ''"
           :restaurant="item.restaurant || ''"
           :foodtruck="item.foodtruck || ''"
           :class="{ 'is-restaurant-selected': !!selectedRestaurant }"
