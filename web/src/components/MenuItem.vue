@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import MenuIcon from './MenuIcon.vue'
 
 const props = defineProps({
   name: {
@@ -30,9 +30,6 @@ const props = defineProps({
   }
 });
 
-const iconCdnUrl = computed(() => {
-  return props.icon ? `https://img.icons8.com/plasticine/200/${props.icon}.png` : '';
-})
 
 </script>
 
@@ -51,9 +48,7 @@ const iconCdnUrl = computed(() => {
         <h3 class="font-medium">{{ name }}</h3>
       </div>
       <div class="flex items-start gap-3 mt-1">
-        <div v-if="icon" class="w-12 h-12 bg-gray-200 rounded-full flex-shrink-0 flex items-center justify-center">
-          <img :src="iconCdnUrl" :alt="`${props.icon} icon`" />
-        </div>
+        <MenuIcon v-if="icon" :icon="icon" />
         <p class="text-gray-600">{{ description }}</p>
       </div>
       <div class="mt-4 flex gap-2">
