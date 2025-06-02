@@ -8,7 +8,7 @@ import { getISOWeekNumber } from './util/date';
 import foodtrucksMenu from './foodtrucks.json';
 
 const baseUrl = 'https://pub-201cbf927f0b4c8991d32485a57b9d40.r2.dev';
-const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
 // Get menu filenames based on current week number and year
 const getMenuFiles = () => {
@@ -35,8 +35,8 @@ const getDayFromURL = () => {
   const urlParams = new URLSearchParams(window.location.search);
   const dayParam = urlParams.get('day');
   
-  if (dayParam && days.includes(dayParam)) {
-    return dayParam;
+  if (dayParam && days.includes(dayParam.toLowerCase())) {
+    return dayParam.toLowerCase();
   }
   
   // Default to current day
@@ -157,8 +157,11 @@ const loadMenus = async () => {
       if (menuData.type === 'daily' && menuData.menu) {
         // For daily menus (organized by day)
         Object.keys(menuData.menu).forEach(day => {
-          if (!combinedMenu[day]) {
-            combinedMenu[day] = [];
+          // Normalize day name to lowercase format
+          const normalizedDay = day.toLowerCase();
+          
+          if (!combinedMenu[normalizedDay]) {
+            combinedMenu[normalizedDay] = [];
           }
           
           // Add restaurant name to each menu item
@@ -168,12 +171,12 @@ const loadMenus = async () => {
           }));
           
           // Add items to combined menu
-          combinedMenu[day] = [...combinedMenu[day], ...itemsWithRestaurant];
+          combinedMenu[normalizedDay] = [...combinedMenu[normalizedDay], ...itemsWithRestaurant];
         });
       } else if (menuData.type === 'weekly' && menuData.menu) {
         // For weekly menus (same items all week)
         // Add weekly menu items to all weekdays (Monday-Friday)
-        ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].forEach(day => {
+        ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].forEach(day => {
           if (!combinedMenu[day]) {
             combinedMenu[day] = [];
           }
@@ -193,12 +196,15 @@ const loadMenus = async () => {
     // Add static foodtrucks menu to combined menu
     if (foodtrucksMenu.type === 'daily' && foodtrucksMenu.menu) {
       Object.keys(foodtrucksMenu.menu).forEach(day => {
-        if (!combinedMenu[day]) {
-          combinedMenu[day] = [];
+        // Normalize day name to lowercase format
+        const normalizedDay = day.toLowerCase();
+        
+        if (!combinedMenu[normalizedDay]) {
+          combinedMenu[normalizedDay] = [];
         }
         
         // Add foodtrucks items to combined menu
-        combinedMenu[day] = [...combinedMenu[day], ...foodtrucksMenu.menu[day]];
+        combinedMenu[normalizedDay] = [...combinedMenu[normalizedDay], ...foodtrucksMenu.menu[day]];
       });
     }
     
@@ -223,22 +229,34 @@ const handleRestaurantSelect = (restaurant) => {
   selectedRestaurant.value = restaurant;
 };
 
+// Check if menu exists for the selected day
+const hasMenuForSelectedDay = computed(() => {
+  return Object.keys(menu.value).find(
+    key => key.toLowerCase() === selectedDay.value.toLowerCase()
+  );
+});
+
 // Filtered menu items based on selected restaurant
 const filteredMenuItems = computed(() => {
-  if (!menu.value[selectedDay.value]) {
+  // Find the day key in menu.value (case-insensitive)
+  const menuDayKey = Object.keys(menu.value).find(
+    key => key.toLowerCase() === selectedDay.value.toLowerCase()
+  );
+  
+  if (!menuDayKey || !menu.value[menuDayKey]) {
     return [];
   }
   
   if (selectedRestaurant.value) {
     // Filter items for the selected restaurant
-    return menu.value[selectedDay.value].filter(
+    return menu.value[menuDayKey].filter(
       item => item.restaurant === selectedRestaurant.value
     );
   }
   
   // Group items by restaurant
   const restaurantGroups = {};
-  menu.value[selectedDay.value].forEach(item => {
+  menu.value[menuDayKey].forEach(item => {
     if (!restaurantGroups[item.restaurant]) {
       restaurantGroups[item.restaurant] = [];
     }
@@ -325,7 +343,7 @@ onUnmounted(() => {
         Error loading menu: {{ error }}
       </div>
       <!-- menu items list -->
-      <div v-else-if="menu[selectedDay]" class="space-y-4">
+      <div v-else-if="hasMenuForSelectedDay" class="space-y-4">
         <MenuItem 
           v-for="(item, index) in filteredMenuItems" 
           :key="index" 

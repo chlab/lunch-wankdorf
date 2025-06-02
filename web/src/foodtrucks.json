@@ -74,7 +74,7 @@
         "name": "Pulled Pork Sandwich",
         "description": "Verzupfter Schweinehals aus dem BBQ-Smoker im Burger-Brötchen",
         "type": "meat",
-        "icon": "burger",
+        "icon": "hamburger",
         "restaurant": "Foodtrucks",
         "foodtruck": "Firechefs",
         "link": "https://firechefs-streetfood.ch/"
@@ -83,7 +83,7 @@
         "name": "Grilled Chicken Sandwich",
         "description": "Pouletschenkelsteak mit Haus Gewürzmischung im Burger-Brötchen",
         "type": "meat",
-        "icon": "burger",
+        "icon": "hamburger",
         "restaurant": "Foodtrucks",
         "foodtruck": "Firechefs",
         "link": "https://firechefs-streetfood.ch/"
@@ -92,7 +92,7 @@
         "name": "Pumpkin & Blue Cheese Sandwich",
         "description": "Geschmorter Kürbis mit Blue Cheese im Burger-Brötchen",
         "type": "vegetarian",
-        "icon": "burger",
+        "icon": "hamburger",
         "restaurant": "Foodtrucks",
         "foodtruck": "Firechefs",
         "link": "https://firechefs-streetfood.ch/"
