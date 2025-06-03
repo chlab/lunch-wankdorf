@@ -45,7 +45,7 @@ const props = defineProps({
   <div class="max-w-sm rounded-lg shadow-lg bg-white mx-auto">
     <div class="px-6 py-4">
       <div class="flex items-center">
-        <h3 class="font-medium">{{ name }}</h3>
+        <h3 class="font-medium capitalize">{{ name }}</h3>
       </div>
       <div class="flex items-start gap-3 mt-1">
         <MenuIcon v-if="icon" :icon="icon" />
