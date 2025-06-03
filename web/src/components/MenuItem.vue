@@ -42,7 +42,7 @@ const props = defineProps({
 </style>
 
 <template>
-  <div class="max-w-sm rounded-lg shadow-lg bg-white mx-auto">
+  <div class="max-w-lg rounded-lg shadow-lg bg-white mx-auto">
     <div class="px-6 py-4">
       <div class="flex items-center">
         <h3 class="font-medium capitalize">{{ name }}</h3>
