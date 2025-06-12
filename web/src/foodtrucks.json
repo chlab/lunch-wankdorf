@@ -141,6 +141,24 @@
         "restaurant": "Foodtrucks",
         "foodtruck": "Greek Spot",
         "link": "https://www.greekspot.ch/menu"
+      },
+      {
+        "name": "Indische Curries",
+        "description": "Vegi, Poulet oder Lamm Curry mit Reis und Linsen",
+        "type": "",
+        "icon": "curry",
+        "restaurant": "Foodtrucks",
+        "foodtruck": "Abis's Aroma Avenue",
+        "link": "https://abiavenue.com/"
+      },
+      {
+        "name": "Dosa",
+        "description": "Massala oder Käse Dosa",
+        "type": "",
+        "icon": "wrap",
+        "restaurant": "Foodtrucks",
+        "foodtruck": "Abis's Aroma Avenue",
+        "link": "https://abiavenue.com/"
       }
     ],
     "Friday": []
