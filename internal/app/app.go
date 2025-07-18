@@ -34,21 +34,21 @@ type RestaurantMenu struct {
 var restaurantMenus = map[string]RestaurantMenu{
 	"gira": {
 		Name:             "Gira",
-		URL:              "https://app.food2050.ch/de/sbb-gira/gira/menu/mittagsmenue/weekly",
+		URL:              "https://app.food2050.ch/de/v2/zfv/sbb/gira/mittagsverpflegung/menu/weekly",
 		BaseURL:          "https://app.food2050.ch",
 		HasCustomScraper: false,
 		MenuType:         "html",
 	},
 	"luna": {
 		Name:             "Luna",
-		URL:              "https://app.food2050.ch/de/sbb-restaurant-luna/sbb-luna/menu/mittagsmenue/weekly",
+		URL:              "https://app.food2050.ch/de/v2/zfv/sbb/restaurant-luna/mittagsverpflegung/menu/weekly",
 		BaseURL:          "https://app.food2050.ch",
 		HasCustomScraper: false,
 		MenuType:         "html",
 	},
 	"sole": {
 		Name:             "Sole",
-		URL:              "https://app.food2050.ch/de/sbb-sole/sole/menu/mittagsmenue/weekly",
+		URL:              "https://app.food2050.ch/de/v2/zfv/sbb/sole/mittagsverpflegung/menu/weekly",
 		BaseURL:          "https://app.food2050.ch",
 		HasCustomScraper: false,
 		MenuType:         "html",
