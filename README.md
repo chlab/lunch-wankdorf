@@ -33,7 +33,7 @@ This project follows the [Standard Go Project Layout](https://github.com/golang-
 
 ## Requirements
 
-- Go 1.22 or later
+- Go 1.24 or later
 - OpenAI API key
 - Cloudflare R2 bucket with a `lunch-wankdorf` bucket and access key
 
