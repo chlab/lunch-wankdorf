@@ -3,7 +3,7 @@ import { ref, onMounted, onUnmounted, computed } from 'vue';
 import MenuItem from './components/MenuItem.vue';
 import Skeleton from './components/Skeleton.vue';
 import DateNavigator from './components/DateNavigator.vue';
-import RestaurantFilter from './components/RestaurantFilter.vue';
+import Menu from './components/Menu.vue';
 import { getISOWeekNumber } from './util/date';
 import foodtrucksMenu from './foodtrucks.json';
 
@@ -70,6 +70,7 @@ const selectedRestaurant = ref('');
 const availableRestaurants = ref(['Foodtrucks']);
 // Identify weekly menus
 const weeklyRestaurants = ref([]);
+const vegetarianFilter = ref(false);
 
 // Format the current date for display
 const formattedDate = computed(() => {
@@ -229,6 +230,11 @@ const handleRestaurantSelect = (restaurant) => {
   selectedRestaurant.value = restaurant;
 };
 
+// Handle vegetarian filter toggle from MenuItemFilter component
+const handleVegetarianToggle = (isVegetarian) => {
+  vegetarianFilter.value = isVegetarian;
+};
+
 // Check if menu exists for the selected day
 const hasMenuForSelectedDay = computed(() => {
   return Object.keys(menu.value).find(
@@ -236,7 +242,7 @@ const hasMenuForSelectedDay = computed(() => {
   );
 });
 
-// Filtered menu items based on selected restaurant
+// Filtered menu items based on selected restaurant and vegetarian filter
 const filteredMenuItems = computed(() => {
   // Find the day key in menu.value (case-insensitive)
   const menuDayKey = Object.keys(menu.value).find(
@@ -247,40 +253,52 @@ const filteredMenuItems = computed(() => {
     return [];
   }
   
+  let items = [];
+  
   if (selectedRestaurant.value) {
     // Filter items for the selected restaurant
-    return menu.value[menuDayKey].filter(
+    items = menu.value[menuDayKey].filter(
       item => item.restaurant === selectedRestaurant.value
+    );
+  } else {
+    // Group items by restaurant
+    const restaurantGroups = {};
+    menu.value[menuDayKey].forEach(item => {
+      if (!restaurantGroups[item.restaurant]) {
+        restaurantGroups[item.restaurant] = [];
+      }
+      restaurantGroups[item.restaurant].push(item);
+    });
+    
+    // Use the order from availableRestaurants
+    // This ensures daily menus first, then foodtrucks, then weekly menus
+    const orderedRestaurants = availableRestaurants.value.filter(
+      restaurant => restaurantGroups[restaurant]
+    );
+    
+    // Group restaurants by type based on the ordered list
+    const dailyRestaurants = orderedRestaurants.filter(r => r !== 'Foodtrucks' && !weeklyRestaurants.value.includes(r));
+    const foodtrucks = 'Foodtrucks';
+    const weeklyMenuRestaurants = orderedRestaurants.filter(r => weeklyRestaurants.value.includes(r));
+    
+    // Get items by restaurant type and sort randomly where needed
+    const dailyItems = dailyRestaurants.flatMap(r => restaurantGroups[r]).sort(() => Math.random() - 0.5);
+    const foodtruckItems = restaurantGroups[foodtrucks] || [];
+    const weeklyItems = weeklyMenuRestaurants.flatMap(r => restaurantGroups[r]).sort(() => Math.random() - 0.5);
+    
+    // Combine all items: daily first, then foodtrucks, then weekly
+    items = [...dailyItems, ...foodtruckItems, ...weeklyItems];
+  }
+  
+  // Apply vegetarian filter if active
+  if (vegetarianFilter.value) {
+    items = items.filter(item => 
+      item.type === 'vegan' || 
+      item.type === 'vegetarian'
     );
   }
   
-  // Group items by restaurant
-  const restaurantGroups = {};
-  menu.value[menuDayKey].forEach(item => {
-    if (!restaurantGroups[item.restaurant]) {
-      restaurantGroups[item.restaurant] = [];
-    }
-    restaurantGroups[item.restaurant].push(item);
-  });
-  
-  // Use the order from availableRestaurants
-  // This ensures daily menus first, then foodtrucks, then weekly menus
-  const orderedRestaurants = availableRestaurants.value.filter(
-    restaurant => restaurantGroups[restaurant]
-  );
-  
-  // Group restaurants by type based on the ordered list
-  const dailyRestaurants = orderedRestaurants.filter(r => r !== 'Foodtrucks' && !weeklyRestaurants.value.includes(r));
-  const foodtrucks = 'Foodtrucks';
-  const weeklyMenuRestaurants = orderedRestaurants.filter(r => weeklyRestaurants.value.includes(r));
-  
-  // Get items by restaurant type and sort randomly where needed
-  const dailyItems = dailyRestaurants.flatMap(r => restaurantGroups[r]).sort(() => Math.random() - 0.5);
-  const foodtruckItems = restaurantGroups[foodtrucks] || [];
-  const weeklyItems = weeklyMenuRestaurants.flatMap(r => restaurantGroups[r]).sort(() => Math.random() - 0.5);
-  
-  // Combine all items: daily first, then foodtrucks, then weekly
-  return [...dailyItems, ...foodtruckItems, ...weeklyItems];
+  return items;
 });
 
 // Handle popstate events (browser back/forward navigation)
@@ -328,12 +346,14 @@ onUnmounted(() => {
 
     <!-- Main Content -->
     <main class="flex-grow container mx-auto py-6 px-4 max-w-4xl">
-      <!-- Restaurant filter -->
-      <RestaurantFilter 
+      <!-- Filters -->
+      <Menu 
         :restaurants="availableRestaurants" 
         :selected-restaurant="selectedRestaurant"
+        :vegetarian-filter="vegetarianFilter"
         @select-restaurant="handleRestaurantSelect"
-      />
+        @toggle-vegetarian="handleVegetarianToggle"
+      /> 
 
       <!-- loader -->
       <div v-if="loading" class="space-y-4">
