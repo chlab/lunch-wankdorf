@@ -107,7 +107,7 @@ func validateJSON(result string) (string, error) {
 }
 
 // ParseRestaurantHtmlMenu sends HTML content to OpenAI to extract menu information
-func ParseRestaurantHtmlMenu(htmlContent string) (string, error) {
+func ParseRestaurantHtmlMenu(htmlContent string) ([]byte, error) {
 	prompt := `Parse the following HTML extracted from a restaurant's weekly menu page. The text is in German.
 Be aware that a day may be empty due to a holiday or other reason. Important: The week starts on Monday and so does the menu.
 Return a JSON structure where the key is the day of the week in English  and the value is an array of menu options
@@ -127,19 +127,19 @@ Here is the extracted HTML of the menu:
 
 	result, err := CreateCompletion(prompt)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse menu: %w", err)
+		return nil, fmt.Errorf("failed to parse menu: %w", err)
 	}
 
 	// Validate the JSON
 	cleanedJSON, err := validateJSON(result)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	// Parse the days of the week structure
 	var dailyMenu map[string]interface{}
 	if err := json.Unmarshal([]byte(cleanedJSON), &dailyMenu); err != nil {
-		return "", fmt.Errorf("failed to parse menu JSON: %w", err)
+		return nil, fmt.Errorf("failed to parse menu JSON: %w", err)
 	}
 
 	// Create the new structure
@@ -152,17 +152,16 @@ Here is the extracted HTML of the menu:
 	}
 
 	// Convert back to JSON
-	// TODO: don't convert back to JSON
 	finalJSON, err := json.Marshal(finalMenu)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal final menu: %w", err)
+		return nil, fmt.Errorf("failed to marshal final menu: %w", err)
 	}
 
-	return string(finalJSON), nil
+	return finalJSON, nil
 }
 
 // ParseRestaurantPdfMenu sends extracted text from a PDF to OpenAI to extract menu information
-func ParseRestaurantPdfMenu(extractedText string, restaurantName string, pdfURL string) (string, error) {
+func ParseRestaurantPdfMenu(extractedText string, restaurantName string, pdfURL string) ([]byte, error) {
 	prompt := `Parse the following extracted text from a restaurant's menu PDF.
 Return a JSON structure with an array of menu options. Each menu option should have these keys:
 - name: The name of the dish
@@ -180,13 +179,13 @@ Extracted PDF content:
 
 	result, err := CreateCompletion(prompt)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse PDF menu: %w", err)
+		return nil, fmt.Errorf("failed to parse PDF menu: %w", err)
 	}
 
 	// First validate and clean the JSON
 	cleanedJSON, err := validateJSON(result)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	// Try to parse the JSON - it might be in different formats
@@ -210,7 +209,7 @@ Extracted PDF content:
 			if jsonErr := json.Unmarshal([]byte(cleanedJSON), &menuOptionsObject); jsonErr == nil && len(menuOptionsObject.MenuOptions) > 0 {
 				parsedItems = menuOptionsObject.MenuOptions
 			} else {
-				return "", fmt.Errorf("failed to parse menu items from JSON: %w", err)
+				return nil, fmt.Errorf("failed to parse menu items from JSON: %w", err)
 			}
 		}
 	}
@@ -233,8 +232,8 @@ Extracted PDF content:
 	// Convert back to JSON
 	finalJSON, err := json.Marshal(finalMenu)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal final menu: %w", err)
+		return nil, fmt.Errorf("failed to marshal final menu: %w", err)
 	}
 
-	return string(finalJSON), nil
+	return finalJSON, nil
 }

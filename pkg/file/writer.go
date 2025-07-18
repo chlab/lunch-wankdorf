@@ -9,6 +9,11 @@ import (
 
 // WriteString writes a string to a file
 func WriteString(content, fileName string) error {
+	return WriteBytes([]byte(content), fileName)
+}
+
+// WriteBytes writes bytes to a file
+func WriteBytes(content []byte, fileName string) error {
 	fileName = strings.ToLower(fileName)
 	// Create the directory if it doesn't exist
 	dir := filepath.Dir(fileName)
@@ -17,7 +22,7 @@ func WriteString(content, fileName string) error {
 	}
 
 	// Write the file
-	if err := os.WriteFile(fileName, []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(fileName, content, 0o644); err != nil {
 		return fmt.Errorf("failed to write file %s: %w", fileName, err)
 	}
 
@@ -26,7 +31,7 @@ func WriteString(content, fileName string) error {
 
 // WriteToDebugFile writes content to a debug file in the specified directory
 // The file will be named using the restaurant name and the specified filetype
-func WriteToDebugFile(content, label string, restaurantName string, fileType string) (string, error) {
+func WriteToDebugFile(content []byte, label string, restaurantName string, fileType string) (string, error) {
 	// Create debug directory if it doesn't exist
 	debugDir := "debug"
 	if err := os.MkdirAll(debugDir, 0o755); err != nil {
@@ -42,7 +47,7 @@ func WriteToDebugFile(content, label string, restaurantName string, fileType str
 	fileName := filepath.Join(debugDir, fmt.Sprintf("%s_%s.%s", restaurantName, label, fileType))
 
 	// Write the content to the file
-	if err := WriteString(content, fileName); err != nil {
+	if err := WriteBytes(content, fileName); err != nil {
 		return "", err
 	}
 

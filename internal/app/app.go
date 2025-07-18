@@ -142,7 +142,7 @@ func processHTMLMenu(restaurant RestaurantMenu, config Config) {
 	// Save debug files if debug mode is enabled
 	if config.DebugMode {
 		// Save raw HTML content to debug file
-		htmlDebugFile, err := file.WriteToDebugFile(htmlContent.Content, "raw_html", restaurant.Name, "html")
+		htmlDebugFile, err := file.WriteToDebugFile([]byte(htmlContent.Content), "raw_html", restaurant.Name, "html")
 		if err != nil {
 			log.Printf("Warning: Could not write raw HTML to debug file: %v", err)
 		} else {
@@ -156,7 +156,7 @@ func processHTMLMenu(restaurant RestaurantMenu, config Config) {
 	// Save debug files if debug mode is enabled
 	if config.DebugMode {
 		// Save extracted menu content to debug file
-		menuContentDebugFile, err := file.WriteToDebugFile(menuData, "menu_content", restaurant.Name, "html")
+		menuContentDebugFile, err := file.WriteToDebugFile([]byte(menuData), "menu_content", restaurant.Name, "html")
 		if err != nil {
 			log.Printf("Warning: Could not write menu content to debug file: %v", err)
 		} else {
@@ -204,14 +204,14 @@ func processHTMLMenu(restaurant RestaurantMenu, config Config) {
 
 	// Format JSON for output
 	var prettyJSON bytes.Buffer
-	if err := json.Indent(&prettyJSON, []byte(processedMenu), "", "  "); err != nil {
-		prettyJSON = *bytes.NewBufferString(processedMenu)
+	if err := json.Indent(&prettyJSON, processedMenu, "", "  "); err != nil {
+		prettyJSON = *bytes.NewBuffer(processedMenu)
 	}
 
 	// Save debug files if debug mode is enabled
 	if config.DebugMode {
 		// Save parsed menu to debug file
-		parsedMenuDebugFile, err := file.WriteToDebugFile(prettyJSON.String(), "parsed_menu", restaurant.Name, "json")
+		parsedMenuDebugFile, err := file.WriteToDebugFile(prettyJSON.Bytes(), "parsed_menu", restaurant.Name, "json")
 		if err != nil {
 			log.Printf("Warning: Could not write parsed menu to debug file: %v", err)
 		} else {
@@ -290,7 +290,7 @@ func processPDFMenu(restaurant RestaurantMenu, config Config) {
 
 	// Save extracted text to debug file if debug mode is enabled
 	if config.DebugMode {
-		textDebugFile, err := file.WriteToDebugFile(pdfText, "extracted_text", restaurant.Name, "txt")
+		textDebugFile, err := file.WriteToDebugFile([]byte(pdfText), "extracted_text", restaurant.Name, "txt")
 		if err != nil {
 			log.Printf("Warning: Could not write extracted PDF text to debug file: %v", err)
 		} else {
@@ -310,14 +310,14 @@ func processPDFMenu(restaurant RestaurantMenu, config Config) {
 
 	// Format JSON for output
 	var prettyJSON bytes.Buffer
-	if err := json.Indent(&prettyJSON, []byte(parsedMenu), "", "  "); err != nil {
-		prettyJSON = *bytes.NewBufferString(parsedMenu)
+	if err := json.Indent(&prettyJSON, parsedMenu, "", "  "); err != nil {
+		prettyJSON = *bytes.NewBuffer(parsedMenu)
 	}
 
 	// Save debug files if debug mode is enabled
 	if config.DebugMode {
 		// Save parsed menu to debug file
-		parsedMenuDebugFile, err := file.WriteToDebugFile(prettyJSON.String(), "parsed_menu", restaurant.Name, "json")
+		parsedMenuDebugFile, err := file.WriteToDebugFile(prettyJSON.Bytes(), "parsed_menu", restaurant.Name, "json")
 		if err != nil {
 			log.Printf("Warning: Could not write parsed menu to debug file: %v", err)
 		} else {
@@ -341,11 +341,11 @@ func processPDFMenu(restaurant RestaurantMenu, config Config) {
 }
 
 // processMenuLinks adds the restaurant's base URL to relative links in the menu
-func processMenuLinks(menuJSON string, baseURL string) (string, error) {
-	// Parse the JSON string
+func processMenuLinks(menuJSON []byte, baseURL string) ([]byte, error) {
+	// Parse the JSON
 	var menuData map[string][]map[string]interface{}
-	if err := json.Unmarshal([]byte(menuJSON), &menuData); err != nil {
-		return "", fmt.Errorf("failed to unmarshal menu JSON: %v", err)
+	if err := json.Unmarshal(menuJSON, &menuData); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal menu JSON: %v", err)
 	}
 
 	// Process each day's menu items
@@ -366,10 +366,10 @@ func processMenuLinks(menuJSON string, baseURL string) (string, error) {
 	// Convert back to JSON
 	processedJSON, err := json.Marshal(menuData)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal processed menu: %v", err)
+		return nil, fmt.Errorf("failed to marshal processed menu: %v", err)
 	}
 
-	return string(processedJSON), nil
+	return processedJSON, nil
 }
 
 // ExtractMenuContent extracts menu-specific content from HTML
@@ -410,7 +410,7 @@ func loadEnv() {
 }
 
 // uploadMenuToR2 uploads the menu JSON to Cloudflare R2 storage
-func uploadMenuToR2(menuJSON string, restaurantName string) error {
+func uploadMenuToR2(menuJSON []byte, restaurantName string) error {
 	// Check for required environment variables
 	accountID := os.Getenv("CLOUDFLARE_ACCOUNT_ID")
 	accessKeyID := os.Getenv("CLOUDFLARE_ACCESS_KEY_ID")
@@ -445,7 +445,7 @@ func uploadMenuToR2(menuJSON string, restaurantName string) error {
 	_, err = svc.PutObject(&s3.PutObjectInput{
 		Bucket:      aws.String(bucketName),
 		Key:         aws.String(filename),
-		Body:        strings.NewReader(menuJSON),
+		Body:        bytes.NewReader(menuJSON),
 		ContentType: aws.String("application/json"),
 	})
 	if err != nil {
