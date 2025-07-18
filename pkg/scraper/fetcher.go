@@ -143,7 +143,6 @@ func ScrapeEspaceWebsite(url string, debug bool) (*MenuData, error) {
 		chromedp.NoDefaultBrowserCheck,
 		chromedp.DisableGPU,
 		chromedp.WindowSize(1280, 800),
-		chromedp.NoSandbox, // not available on CI
 	}
 
 	// Don't run in headless mode if debug mode is enabled
@@ -173,8 +172,8 @@ func ScrapeEspaceWebsite(url string, debug bool) (*MenuData, error) {
 
 	if !debug {
 		defer cancel()
-		defer cancelTimeout()
 	}
+	defer cancelTimeout()
 
 	// Combined menu content from all weekdays
 	var allMenus strings.Builder
@@ -185,7 +184,7 @@ func ScrapeEspaceWebsite(url string, debug bool) (*MenuData, error) {
 		// Do not grant any permissions to avoid the geolocation prompt
 		browser.GrantPermissions([]browser.PermissionType{}),
 		// Wait for the weekday navigation to load
-		chromedp.WaitVisible(`.mat-tab-link`, chromedp.ByQuery),
+		chromedp.WaitVisible(`[mat-tab-link]`, chromedp.ByQuery),
 		// Decline cookies if the banner appears
 		chromedp.Click(`#cookiescript_reject`, chromedp.ByQuery),
 		chromedp.Sleep(2*time.Second),
@@ -207,7 +206,7 @@ func ScrapeEspaceWebsite(url string, debug bool) (*MenuData, error) {
 
 		err := chromedp.Run(ctx,
 			// Click on the tab for the current weekday
-			chromedp.Click(fmt.Sprintf(`.mat-tab-link:nth-child(%d)`, day), chromedp.ByQuery),
+			chromedp.Click(fmt.Sprintf(`[mat-tab-link]:nth-child(%d)`, day), chromedp.ByQuery),
 			chromedp.Sleep(1*time.Second),
 			// Extract the menu HTML
 			chromedp.OuterHTML(`app-menu-container`, &dayMenu),
