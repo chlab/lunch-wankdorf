@@ -16,7 +16,7 @@ The project was hacked together in two evenings of vibe-coding, so don't judge m
 - [x] Change the JSON structure of the menus to allow for daily and weekly menus
 - [ ] Consider adding the restaurant name to the menu instead of adding it in the frontend
 - [ ] Add food_type field (healthy, fast food, streetfood, etc.)
-- [ ] Strip quotes from the menu titles, also correct turbolama titles to capitalized instead of all caps
+- [x] Strip quotes from the menu titles, also correct turbolama titles to capitalized instead of all caps
 - [ ] Fix the menu links by adding a base URL to the restaurants
 
 ## Project Structure

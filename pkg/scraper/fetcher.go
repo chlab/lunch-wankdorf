@@ -143,6 +143,7 @@ func ScrapeEspaceWebsite(url string, debug bool) (*MenuData, error) {
 		chromedp.NoDefaultBrowserCheck,
 		chromedp.DisableGPU,
 		chromedp.WindowSize(1280, 800),
+		chromedp.NoSandbox,
 	}
 
 	// Don't run in headless mode if debug mode is enabled
