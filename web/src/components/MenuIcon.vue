@@ -14,6 +14,7 @@ const iconMappings = {
   'burger': 'hamburger',
   'pasta': 'spaghetti',
   'meat': 'steak-rare',
+  'grilled-food': 'steak'
 };
 
 const actualIcon = computed(() => {
