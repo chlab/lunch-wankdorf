@@ -5,6 +5,7 @@
     "Tuesday": [
       {
         "name": "Homemade Pasta oder Gnocchi",
+        "enabled": true,
         "description": "Hausgemachte Pasta oder Gnocchi mit verschiedenen Saucen",
         "type": "",
         "icon": "spaghetti",
@@ -14,6 +15,7 @@
       },
       {
         "name": "Lasagne",
+        "enabled": true,
         "description": "Hausgemachte Lasagne",
         "type": "",
         "icon": "lasagna-sheets",
@@ -23,6 +25,7 @@
       },
       {
         "name": "Tacos",
+        "enabled": true,
         "description": "Tacos Aztecas, Norteños oder Veganismos",
         "type": "",
         "icon": "taco",
@@ -32,6 +35,7 @@
       },
       {
         "name": "Quesadilla",
+        "enabled": true,
         "description": "Quesadilla a Maria oder Mayas",
         "type": "",
         "icon": "wrap",
@@ -43,6 +47,7 @@
     "Wednesday": [
       {
         "name": "Bánh Mì - vietnamesisches Sandwich",
+        "enabled": true,
         "description": "Baguette gefüllt mit grilliertem Fleisch oder Tofu, selbstgemachter Mayo und Paté, Gurken und in Essig eingelegtem Rüebli-Rettich-Gemüse.",
         "type": "",
         "icon": "sandwich",
@@ -52,6 +57,7 @@
       },
       {
         "name": "Bún Bò Xào Sả - mariniertes Rindfleisch mit Reisnudeln",
+        "enabled": true,
         "description": "Kurz angebratenes Rindfleisch, mariniert mit Zitronengras an einer würzigen Sauce - dazu farbiges Gemüse, frische Kräuter und Erdnüsse.",
         "type": "meat",
         "icon": "bento",
@@ -61,6 +67,7 @@
       },
       {
         "name": "Gỏi Cuốn - Sommerrollen",
+        "enabled": true,
         "description": "Crevetten, Schweinefleisch, Salat und Reisnudeln in Reispapier eingerollt.",
         "type": "meat",
         "icon": "korean-rice-cake",
@@ -72,6 +79,7 @@
     "Thursday": [
       {
         "name": "Pulled Pork Sandwich",
+        "enabled": true,
         "description": "Verzupfter Schweinehals aus dem BBQ-Smoker im Burger-Brötchen",
         "type": "meat",
         "icon": "hamburger",
@@ -81,6 +89,7 @@
       },
       {
         "name": "Grilled Chicken Sandwich",
+        "enabled": true,
         "description": "Pouletschenkelsteak mit Haus Gewürzmischung im Burger-Brötchen",
         "type": "meat",
         "icon": "hamburger",
@@ -90,6 +99,7 @@
       },
       {
         "name": "Pumpkin & Blue Cheese Sandwich",
+        "enabled": true,
         "description": "Geschmorter Kürbis mit Blue Cheese im Burger-Brötchen",
         "type": "vegetarian",
         "icon": "hamburger",
@@ -99,6 +109,7 @@
       },
       {
         "name": "Superbowl",
+        "enabled": true,
         "description": "Fleisch oder Vegi, Cole Slaw Salat, Mac & Cheese Ball, Saucen & Pickles",
         "type": "",
         "icon": "rice-bowl",
@@ -108,6 +119,7 @@
       },
       {
         "name": "Fleisch Pita",
+        "enabled": false,
         "description": "Gyros, Souvlaki oder Panseta Pita mit Zwiebeln, Tomaten, Pommes und Sauce nach Wahl",
         "type": "",
         "icon": "wrap",
@@ -117,6 +129,7 @@
       },
       {
         "name": "Halloumi Pita",
+        "enabled": false,
         "description": "Halloumi Pita mit Zwiebeln, Tomaten, Pommes und Sauce nach Wahl",
         "type": "vegetarian",
         "icon": "wrap",
@@ -126,6 +139,7 @@
       },
       {
         "name": "Griechischer Salat",
+        "enabled": false,
         "description": "Tomaten, Gurken, Zwiebeln, Peperoni, Kalamata-Oliven, Feta-Käse, Oregano, Ölivenöl und griechischer Weinessig",
         "type": "vegetarian",
         "icon": "salad",
@@ -135,6 +149,7 @@
       },
       {
         "name": "Teller",
+        "enabled": false,
         "description": "Gyros, Souvlaki, Panseta oder Grill-Mix Teller mit Zwiebeln, Tomaten, Pommes und Sauce nach Wahl",
         "type": "",
         "icon": "steak",
@@ -144,6 +159,7 @@
       },
       {
         "name": "Indische Curries",
+        "enabled": true,
         "description": "Vegi, Poulet oder Lamm Curry mit Reis und Linsen",
         "type": "",
         "icon": "curry",
@@ -153,6 +169,7 @@
       },
       {
         "name": "Dosa",
+        "enabled": true,
         "description": "Massala oder Käse Dosa",
         "type": "",
         "icon": "wrap",

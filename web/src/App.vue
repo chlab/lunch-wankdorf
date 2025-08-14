@@ -204,8 +204,10 @@ const loadMenus = async () => {
           combinedMenu[normalizedDay] = [];
         }
         
+        const foodtruckDailyItems = foodtrucksMenu.menu[day].filter(item => item.enabled);
+
         // Add foodtrucks items to combined menu
-        combinedMenu[normalizedDay] = [...combinedMenu[normalizedDay], ...foodtrucksMenu.menu[day]];
+        combinedMenu[normalizedDay] = [...combinedMenu[normalizedDay], ...foodtruckDailyItems];
       });
     }
     
