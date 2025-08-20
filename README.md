@@ -60,3 +60,7 @@ The application will:
 4. Upload the structured menu data to a Cloudflare R2 bucket
 
 The frontend app retrieves the structured menu data from the Cloudflare R2 bucket and displays it.
+
+## Credits
+
+* Icons from Plasticine [Icons8](https://icons8.com/)

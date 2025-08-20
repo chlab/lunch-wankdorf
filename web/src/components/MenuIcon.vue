@@ -11,6 +11,8 @@ const props = defineProps({
 // map commonly misued icon names to the actual name
 const iconMappings = {
   'bowl': 'rice-bowl',
+  'bowl-vegi': 'rice-bowl',
+  'bowl-fleisch': 'rice-bowl',
   'burger': 'hamburger',
   'pasta': 'spaghetti',
   'meat': 'steak-rare',
