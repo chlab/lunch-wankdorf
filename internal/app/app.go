@@ -69,12 +69,12 @@ var restaurantMenus = map[string]RestaurantMenu{
 		MenuSelector:     "a[aria-label=\"FOOD MENU\"]",
 	},
 	"freibank": {
-		Name:             "Freibank",
-		URL:              "https://www.freibank.ch/speisekarte",
+		Name: "Freibank",
+		// would need selector: div[data-hook=\"app.container\
+		URL:              "https://www.freibank.ch/speisundtrankangebot",
 		BaseURL:          "https://www.freibank.ch/",
 		HasCustomScraper: false,
-		MenuType:         "pdf",
-		MenuSelector:     ".wp-block-file a:first-of-type",
+		MenuType:         "html",
 	},
 }
 

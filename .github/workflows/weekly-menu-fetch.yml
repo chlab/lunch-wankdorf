@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        restaurant: [gira, luna, sole, espace, freibank, turbolama]
+        restaurant: [gira, luna, sole, espace, turbolama]
 
     env:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
