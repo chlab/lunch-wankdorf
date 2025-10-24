@@ -63,4 +63,4 @@ The frontend app retrieves the structured menu data from the Cloudflare R2 bucke
 
 ## Credits
 
-* Icons from Plasticine [Icons8](https://icons8.com/)
+* Icons from Plasticine [Icons8](https://icons8.com/icons/set/food--style-plasticine/)
