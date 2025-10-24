@@ -40,6 +40,7 @@ var IconsList = []string{
 	"sausage",
 	"seafood",
 	"spaghetti (pasta)",
+	"porridge (mac n cheese)",
 	"steak (grilled meats, bbq)",
 	"steak-rare (meat)",
 	"sushi",
