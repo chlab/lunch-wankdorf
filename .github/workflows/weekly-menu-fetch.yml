@@ -36,14 +36,19 @@ jobs:
         run: GOARCH=amd64 GOOS=linux go build -o lunch-app ./cmd/app/main.go
 
       - name: Run binary inside container with chromedp
-        run: |
-          docker run --rm --platform linux/amd64 \
-            --entrypoint /app/lunch-app \
-            -v ${{ github.workspace }}/lunch-app:/app/lunch-app \
-            -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
-            -e CLOUDFLARE_ACCOUNT_ID=${{ secrets.CLOUDFLARE_ACCOUNT_ID }} \
-            -e CLOUDFLARE_ACCESS_KEY_ID=${{ secrets.CLOUDFLARE_ACCESS_KEY_ID }} \
-            -e CLOUDFLARE_SECRET_ACCESS_KEY=${{ secrets.CLOUDFLARE_SECRET_ACCESS_KEY }} \
-            -e CLOUDFLARE_BUCKET_NAME=${{ secrets.CLOUDFLARE_BUCKET_NAME }} \
-            chlab/lunch-wankdorf:latest \
-            -restaurant ${{ matrix.restaurant }} -upload
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 15
+          timeout_minutes: 5
+          command: |
+            docker run --rm --platform linux/amd64 \
+              --entrypoint /app/lunch-app \
+              -v ${{ github.workspace }}/lunch-app:/app/lunch-app \
+              -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
+              -e CLOUDFLARE_ACCOUNT_ID=${{ secrets.CLOUDFLARE_ACCOUNT_ID }} \
+              -e CLOUDFLARE_ACCESS_KEY_ID=${{ secrets.CLOUDFLARE_ACCESS_KEY_ID }} \
+              -e CLOUDFLARE_SECRET_ACCESS_KEY=${{ secrets.CLOUDFLARE_SECRET_ACCESS_KEY }} \
+              -e CLOUDFLARE_BUCKET_NAME=${{ secrets.CLOUDFLARE_BUCKET_NAME }} \
+              chlab/lunch-wankdorf:latest \
+              -restaurant ${{ matrix.restaurant }} -upload
