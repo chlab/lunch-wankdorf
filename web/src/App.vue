@@ -22,7 +22,7 @@ const getMenuFiles = () => {
     luna: `luna_${weekNumber}_${year}.json`,
     sole: `sole_${weekNumber}_${year}.json`,
     espace: `espace_${weekNumber}_${year}.json`,
-    freibank: `freibank_${weekNumber}_${year}.json`,
+    // freibank: `freibank_${weekNumber}_${year}.json`, // disabled
     turbolama: `turbolama_${weekNumber}_${year}.json`,
   };
 };
