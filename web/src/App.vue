@@ -260,6 +260,26 @@ const filteredMenuItems = computed(() => {
   return items;
 });
 
+// Get a seeded random number based on the current date (consistent for the whole day)
+const getSeededRandom = (seed) => {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+};
+
+// Daily recommendation - pick a random menu item (consistent for the day)
+const dailyRecommendation = computed(() => {
+  // Exclude foodtrucks as they aren't consistently there
+  const items = filteredMenuItems.value.filter(item => item.restaurant !== 'Foodtrucks');
+  if (items.length === 0) return null;
+
+  // Use date as seed so recommendation stays consistent throughout the day
+  const today = new Date();
+  const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+  const randomIndex = Math.floor(getSeededRandom(seed) * items.length);
+
+  return items[randomIndex];
+});
+
 // Group menu items by restaurant for display
 const groupedMenuItems = computed(() => {
   const items = filteredMenuItems.value;
@@ -357,12 +377,30 @@ onUnmounted(() => {
       </div>
       <!-- menu items list grouped by restaurant -->
       <div v-else-if="hasMenuForSelectedDay" class="space-y-6">
-        <div v-for="(group, groupIndex) in groupedMenuItems" :key="group.restaurant">
+        <!-- Daily recommendation -->
+        <div v-if="dailyRecommendation" class="mb-6">
           <div class="flex items-center justify-between mb-3 max-w-md mx-auto">
-            <h2 class="text-lg font-semibold text-gray-700">{{ group.restaurant }}</h2>
-            <ViewToggle v-if="groupIndex === 0" v-model:compactView="compactView" />
+            <h2 class="text-lg font-semibold text-gray-700">Tagesempfehlung</h2>
+            <ViewToggle v-model:compactView="compactView" />
           </div>
-          <div :class="compactView ? 'max-w-md mx-auto rounded-lg shadow-md overflow-hidden bg-white p-6' : 'space-y-4'">
+          <div :class="compactView ? 'max-w-md mx-auto rounded-lg shadow-md overflow-hidden bg-white p-4' : ''">
+            <MenuItem
+              :name="dailyRecommendation.name"
+              :description="dailyRecommendation.description"
+              :type="dailyRecommendation.type"
+              :link="dailyRecommendation.link || ''"
+              :icon="dailyRecommendation.icon || ''"
+              :restaurant="dailyRecommendation.restaurant || ''"
+              :foodtruck="dailyRecommendation.foodtruck || ''"
+              :compact="compactView"
+              :always-show-restaurant="true"
+            />
+          </div>
+        </div>
+
+        <div v-for="group in groupedMenuItems" :key="group.restaurant">
+          <h2 class="text-lg font-semibold text-gray-700 mb-3 max-w-md mx-auto">{{ group.restaurant }}</h2>
+          <div :class="compactView ? 'max-w-md mx-auto rounded-lg shadow-md overflow-hidden bg-white p-4' : 'space-y-4'">
             <MenuItem
               v-for="(item, index) in group.items"
               :key="index"
