@@ -303,6 +303,49 @@ const filteredMenuItems = computed(() => {
   return items;
 });
 
+// Group menu items by restaurant for display
+const groupedMenuItems = computed(() => {
+  const items = filteredMenuItems.value;
+
+  // If a restaurant is already selected, just return one group
+  if (selectedRestaurant.value) {
+    return items.length > 0 ? [{ restaurant: selectedRestaurant.value, items }] : [];
+  }
+
+  // Group items by restaurant
+  const groupsMap = {};
+  items.forEach(item => {
+    if (!groupsMap[item.restaurant]) {
+      groupsMap[item.restaurant] = [];
+    }
+    groupsMap[item.restaurant].push(item);
+  });
+
+  // Restaurants that should always be at the end
+  const appendedRestaurants = ['Foodtrucks', 'Turbolama'];
+
+  // Separate main restaurants from appended ones
+  const mainGroups = [];
+  const appendedGroups = [];
+
+  Object.keys(groupsMap).forEach(restaurant => {
+    const group = { restaurant, items: groupsMap[restaurant] };
+    if (appendedRestaurants.includes(restaurant)) {
+      appendedGroups.push(group);
+    } else {
+      mainGroups.push(group);
+    }
+  });
+
+  // Randomize main restaurants, keep appended in fixed order
+  mainGroups.sort(() => Math.random() - 0.5);
+  appendedGroups.sort((a, b) =>
+    appendedRestaurants.indexOf(a.restaurant) - appendedRestaurants.indexOf(b.restaurant)
+  );
+
+  return [...mainGroups, ...appendedGroups];
+});
+
 // Handle popstate events (browser back/forward navigation)
 const handlePopState = () => {
   const newDay = getDayFromURL();
@@ -364,20 +407,25 @@ onUnmounted(() => {
       <div v-else-if="error" class="text-center py-8 text-red-500">
         Error loading menu: {{ error }}
       </div>
-      <!-- menu items list -->
-      <div v-else-if="hasMenuForSelectedDay" class="space-y-4">
-        <MenuItem 
-          v-for="(item, index) in filteredMenuItems" 
-          :key="index" 
-          :name="item.name" 
-          :description="item.description" 
-          :type="item.type"
-          :link="item.link || ''"
-          :icon="item.icon || ''"
-          :restaurant="item.restaurant || ''"
-          :foodtruck="item.foodtruck || ''"
-          :class="{ 'is-restaurant-selected': !!selectedRestaurant }"
-        />
+      <!-- menu items list grouped by restaurant -->
+      <div v-else-if="hasMenuForSelectedDay" class="space-y-6">
+        <div v-for="group in groupedMenuItems" :key="group.restaurant">
+          <h2 class="text-lg font-semibold text-gray-700 mb-3 max-w-lg mx-auto">{{ group.restaurant }}</h2>
+          <div class="space-y-4">
+            <MenuItem
+              v-for="(item, index) in group.items"
+              :key="index"
+              :name="item.name"
+              :description="item.description"
+              :type="item.type"
+              :link="item.link || ''"
+              :icon="item.icon || ''"
+              :restaurant="item.restaurant || ''"
+              :foodtruck="item.foodtruck || ''"
+              :class="{ 'is-restaurant-selected': !!selectedRestaurant }"
+            />
+          </div>
+        </div>
       </div>
       <!-- no items today -->
       <div v-else class="text-center py-8 text-gray-500">
