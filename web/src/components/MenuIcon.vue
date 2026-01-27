@@ -29,7 +29,7 @@ const iconCdnUrl = computed(() => {
 </script>
 
 <template>
-  <div class="w-12 h-12 bg-gray-200 rounded-full flex-shrink-0 flex items-center justify-center">
+  <div class="w-12 h-12 p-1 bg-gray-200 rounded-full flex-shrink-0 flex items-center justify-center">
     <img :src="iconCdnUrl" :alt="`${actualIcon} icon`" />
   </div>
 </template>
