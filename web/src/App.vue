@@ -364,7 +364,6 @@ onUnmounted(() => {
               :icon="item.icon || ''"
               :restaurant="item.restaurant || ''"
               :foodtruck="item.foodtruck || ''"
-              :class="{ 'is-restaurant-selected': !!selectedRestaurant }"
             />
           </div>
         </div>
