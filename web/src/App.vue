@@ -1,9 +1,10 @@
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import MenuItem from './components/MenuItem.vue';
 import Skeleton from './components/Skeleton.vue';
 import DateNavigator from './components/DateNavigator.vue';
 import Menu from './components/Menu.vue';
+import ViewToggle from './components/ViewToggle.vue';
 import { getISOWeekNumber } from './util/date';
 import foodtrucksMenu from './foodtrucks.json';
 
@@ -69,6 +70,11 @@ const error = ref(null);
 const selectedRestaurant = ref('');
 const availableRestaurants = ref(['Foodtrucks']);
 const vegetarianFilter = ref(false);
+const compactView = ref(localStorage.getItem('compactView') === 'true');
+
+watch(compactView, (value) => {
+  localStorage.setItem('compactView', value);
+});
 
 // Format the current date for display
 const formattedDate = computed(() => {
@@ -351,9 +357,12 @@ onUnmounted(() => {
       </div>
       <!-- menu items list grouped by restaurant -->
       <div v-else-if="hasMenuForSelectedDay" class="space-y-6">
-        <div v-for="group in groupedMenuItems" :key="group.restaurant">
-          <h2 class="text-lg font-semibold text-gray-700 mb-3 max-w-lg mx-auto">{{ group.restaurant }}</h2>
-          <div class="space-y-4">
+        <div v-for="(group, groupIndex) in groupedMenuItems" :key="group.restaurant">
+          <div class="flex items-center justify-between mb-3 max-w-md mx-auto">
+            <h2 class="text-lg font-semibold text-gray-700">{{ group.restaurant }}</h2>
+            <ViewToggle v-if="groupIndex === 0" v-model:compactView="compactView" />
+          </div>
+          <div :class="compactView ? 'max-w-md mx-auto rounded-lg shadow-md overflow-hidden bg-white p-6' : 'space-y-4'">
             <MenuItem
               v-for="(item, index) in group.items"
               :key="index"
@@ -364,6 +373,7 @@ onUnmounted(() => {
               :icon="item.icon || ''"
               :restaurant="item.restaurant || ''"
               :foodtruck="item.foodtruck || ''"
+              :compact="compactView"
             />
           </div>
         </div>
