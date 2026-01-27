@@ -72,10 +72,14 @@ const vegetarianFilter = ref(false);
 
 // Format the current date for display
 const formattedDate = computed(() => {
-  return new Intl.DateTimeFormat('de-CH', { 
+  return new Intl.DateTimeFormat('de-CH', {
     weekday: 'long'
   }).format(currentDate.value);
 });
+
+// Navigation bounds (Monday = 1, Friday = 5)
+const canGoBack = computed(() => currentDate.value.getDay() !== 1);
+const canGoForward = computed(() => currentDate.value.getDay() !== 5);
 
 // Navigate by delta days (-1 for previous, +1 for next)
 const navigateDay = (delta) => {
@@ -318,10 +322,12 @@ onUnmounted(() => {
   <div class="min-h-screen flex flex-col">
     <!-- Sticky Header -->
     <header class="top-0 pt-4">
-      <DateNavigator 
-        :formatted-date="formattedDate" 
-        @date-back="goToPreviousDay" 
-        @date-forward="goToNextDay" 
+      <DateNavigator
+        :formatted-date="formattedDate"
+        :can-go-back="canGoBack"
+        :can-go-forward="canGoForward"
+        @date-back="goToPreviousDay"
+        @date-forward="goToNextDay"
       />
     </header>
 
