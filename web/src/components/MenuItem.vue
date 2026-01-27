@@ -2,11 +2,11 @@
 import MenuIcon from './MenuIcon.vue'
 
 const toTitleCase = (str) => {
-  return str.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+  return str.toLowerCase().replace(/(?:^|\s)\S/g, (char) => char.toUpperCase());
 };
 
 const normalizeTitle = (str) => {
-  return toTitleCase(str.replace(/^[«»"]+|[«»"]+$/g, '').trim());
+  return toTitleCase(str.replace(/[«»"]/g, '').trim());
 };
 
 const props = defineProps({
