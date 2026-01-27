@@ -12,9 +12,7 @@ const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 
 
 // Get menu filenames based on current week number and year
 const getMenuFiles = () => {
-  // Get current week number and year
   const now = new Date();
-  const startOfYear = new Date(now.getFullYear(), 0, 1);
   const weekNumber = getISOWeekNumber();
   const year = now.getFullYear();
 
@@ -51,25 +49,25 @@ const updateURLWithDay = (day) => {
   window.history.pushState({}, '', url);
 };
 
+// Get a date adjusted to a specific day of the week
+const getDateForDay = (dayName) => {
+  const targetIndex = days.indexOf(dayName);
+  const now = new Date();
+  const diff = targetIndex - now.getDay();
+  const date = new Date(now);
+  date.setDate(date.getDate() + diff);
+  return date;
+};
+
 // Current date and derived values
 const selectedDay = ref(getDayFromURL());
-const currentDate = ref(new Date());
-// Adjust current date to match selected day
-const dayIndex = days.indexOf(selectedDay.value);
-if (dayIndex !== -1 && dayIndex !== currentDate.value.getDay()) {
-  const diff = dayIndex - currentDate.value.getDay();
-  const newDate = new Date(currentDate.value);
-  newDate.setDate(newDate.getDate() + diff);
-  currentDate.value = newDate;
-}
+const currentDate = ref(getDateForDay(selectedDay.value));
 
 const menu = ref({});
 const loading = ref(true);
 const error = ref(null);
 const selectedRestaurant = ref('');
 const availableRestaurants = ref(['Foodtrucks']);
-// Identify weekly menus
-const weeklyRestaurants = ref([]);
 const vegetarianFilter = ref(false);
 
 // Format the current date for display
@@ -79,39 +77,26 @@ const formattedDate = computed(() => {
   }).format(currentDate.value);
 });
 
-// Navigate to previous day
-const goToPreviousDay = () => {
-  if (currentDate.value.getDay() == 1) {
+// Navigate by delta days (-1 for previous, +1 for next)
+const navigateDay = (delta) => {
+  const currentDayOfWeek = currentDate.value.getDay();
+  if ((delta < 0 && currentDayOfWeek === 1) || (delta > 0 && currentDayOfWeek === 5)) {
     return;
   }
   const newDate = new Date(currentDate.value);
-  newDate.setDate(newDate.getDate() - 1);
+  newDate.setDate(newDate.getDate() + delta);
   currentDate.value = newDate;
   selectedDay.value = days[currentDate.value.getDay()];
-  
-  // Update URL with new day
   updateURLWithDay(selectedDay.value);
 };
 
-// Navigate to next day
-const goToNextDay = () => {
-  if (currentDate.value.getDay() == 5) {
-    return;
-  }
-  const newDate = new Date(currentDate.value);
-  newDate.setDate(newDate.getDate() + 1);
-  currentDate.value = newDate;
-  selectedDay.value = days[currentDate.value.getDay()];
-  
-  // Update URL with new day
-  updateURLWithDay(selectedDay.value);
-};
+const goToPreviousDay = () => navigateDay(-1);
+const goToNextDay = () => navigateDay(1);
 
 // Load all menus and combine them
 const loadMenus = async () => {
   try {
     loading.value = true;
-    weeklyRestaurants.value = []; // Clear weekly restaurants
     const combinedMenu = {};
     
     // Create an array of promises for all fetch requests
@@ -151,7 +136,6 @@ const loadMenus = async () => {
         dailyRestaurants.push(restaurant);
       } else if (menuData.type === 'weekly') {
         tempWeeklyRestaurants.push(restaurant);
-        weeklyRestaurants.value.push(restaurant);
       }
       
       // Process based on menu type
@@ -237,69 +221,32 @@ const handleVegetarianToggle = (isVegetarian) => {
   vegetarianFilter.value = isVegetarian;
 };
 
-// Check if menu exists for the selected day
-const hasMenuForSelectedDay = computed(() => {
+// Find the menu key for the selected day (case-insensitive)
+const menuDayKey = computed(() => {
   return Object.keys(menu.value).find(
     key => key.toLowerCase() === selectedDay.value.toLowerCase()
   );
 });
 
+// Check if menu exists for the selected day
+const hasMenuForSelectedDay = computed(() => !!menuDayKey.value);
+
 // Filtered menu items based on selected restaurant and vegetarian filter
 const filteredMenuItems = computed(() => {
-  // Find the day key in menu.value (case-insensitive)
-  const menuDayKey = Object.keys(menu.value).find(
-    key => key.toLowerCase() === selectedDay.value.toLowerCase()
-  );
-  
-  if (!menuDayKey || !menu.value[menuDayKey]) {
+  if (!menuDayKey.value || !menu.value[menuDayKey.value]) {
     return [];
   }
-  
-  let items = [];
-  
+
+  let items = menu.value[menuDayKey.value];
+
   if (selectedRestaurant.value) {
-    // Filter items for the selected restaurant
-    items = menu.value[menuDayKey].filter(
-      item => item.restaurant === selectedRestaurant.value
-    );
-  } else {
-    // Group items by restaurant
-    const restaurantGroups = {};
-    menu.value[menuDayKey].forEach(item => {
-      if (!restaurantGroups[item.restaurant]) {
-        restaurantGroups[item.restaurant] = [];
-      }
-      restaurantGroups[item.restaurant].push(item);
-    });
-    
-    // Use the order from availableRestaurants
-    // This ensures daily menus first, then foodtrucks, then weekly menus
-    const orderedRestaurants = availableRestaurants.value.filter(
-      restaurant => restaurantGroups[restaurant]
-    );
-    
-    // Group restaurants by type based on the ordered list
-    const dailyRestaurants = orderedRestaurants.filter(r => r !== 'Foodtrucks' && !weeklyRestaurants.value.includes(r));
-    const foodtrucks = 'Foodtrucks';
-    const weeklyMenuRestaurants = orderedRestaurants.filter(r => weeklyRestaurants.value.includes(r));
-    
-    // Get items by restaurant type and sort randomly where needed
-    const dailyItems = dailyRestaurants.flatMap(r => restaurantGroups[r]).sort(() => Math.random() - 0.5);
-    const foodtruckItems = restaurantGroups[foodtrucks] || [];
-    const weeklyItems = weeklyMenuRestaurants.flatMap(r => restaurantGroups[r]).sort(() => Math.random() - 0.5);
-    
-    // Combine all items: daily first, then foodtrucks, then weekly
-    items = [...dailyItems, ...foodtruckItems, ...weeklyItems];
+    items = items.filter(item => item.restaurant === selectedRestaurant.value);
   }
-  
-  // Apply vegetarian filter if active
+
   if (vegetarianFilter.value) {
-    items = items.filter(item => 
-      item.type === 'vegan' || 
-      item.type === 'vegetarian'
-    );
+    items = items.filter(item => item.type === 'vegan' || item.type === 'vegetarian');
   }
-  
+
   return items;
 });
 
@@ -351,18 +298,7 @@ const handlePopState = () => {
   const newDay = getDayFromURL();
   if (newDay !== selectedDay.value) {
     selectedDay.value = newDay;
-    
-    // Update current date to match the day from URL
-    const dayIndex = days.indexOf(selectedDay.value);
-    if (dayIndex !== -1) {
-      const now = new Date();
-      const todayIndex = now.getDay();
-      const diff = dayIndex - todayIndex;
-      
-      const newDate = new Date(now);
-      newDate.setDate(newDate.getDate() + diff);
-      currentDate.value = newDate;
-    }
+    currentDate.value = getDateForDay(newDay);
   }
 };
 
