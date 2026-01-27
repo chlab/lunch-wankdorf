@@ -28,18 +28,18 @@ const getMenuFiles = () => {
 };
 
 const menuFiles = getMenuFiles();
-// Function to get day name from URL or current date
+
+// Get current day name
+const getCurrentDay = () => days[new Date().getDay()];
+
+// Get day from URL (only used for browser back/forward navigation)
 const getDayFromURL = () => {
   const urlParams = new URLSearchParams(window.location.search);
   const dayParam = urlParams.get('day');
-  
   if (dayParam && days.includes(dayParam.toLowerCase())) {
     return dayParam.toLowerCase();
   }
-  
-  // Default to current day
-  const now = new Date();
-  return days[now.getDay()];
+  return getCurrentDay();
 };
 
 // Function to update URL with current day
@@ -59,8 +59,8 @@ const getDateForDay = (dayName) => {
   return date;
 };
 
-// Current date and derived values
-const selectedDay = ref(getDayFromURL());
+// Current date and derived values (always start with today, ignore URL param on initial load)
+const selectedDay = ref(getCurrentDay());
 const currentDate = ref(getDateForDay(selectedDay.value));
 
 const menu = ref({});
