@@ -10,6 +10,7 @@ import foodtrucksMenu from './foodtrucks.json';
 
 const baseUrl = 'https://pub-201cbf927f0b4c8991d32485a57b9d40.r2.dev';
 const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+const foodtrucksEnabled = false;
 
 // Get menu filenames based on current week number and year
 const getMenuFiles = () => {
@@ -68,7 +69,7 @@ const menu = ref({});
 const loading = ref(true);
 const error = ref(null);
 const selectedRestaurant = ref('');
-const availableRestaurants = ref(['Foodtrucks']);
+const availableRestaurants = ref([]);
 const vegetarianFilter = ref(false);
 const compactView = ref(localStorage.getItem('compactView') === 'true');
 
@@ -189,7 +190,7 @@ const loadMenus = async () => {
     });
     
     // Add static foodtrucks menu to combined menu
-    if (foodtrucksMenu.type === 'daily' && foodtrucksMenu.menu) {
+    if (foodtrucksEnabled && foodtrucksMenu.type === 'daily' && foodtrucksMenu.menu) {
       Object.keys(foodtrucksMenu.menu).forEach(day => {
         // Normalize day name to lowercase format
         const normalizedDay = day.toLowerCase();
@@ -208,7 +209,7 @@ const loadMenus = async () => {
     // Set restaurants in the correct order: daily first, then foodtrucks, then weekly
     availableRestaurants.value = [
       ...dailyRestaurants,
-      'Foodtrucks',
+      ...(foodtrucksEnabled ? ['Foodtrucks'] : []),
       ...tempWeeklyRestaurants
     ];
     
