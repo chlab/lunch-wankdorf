@@ -338,29 +338,21 @@ func processPDFMenu(restaurant RestaurantMenu, config Config) error {
 
 // processMenuLinks adds the restaurant's base URL to relative links in the menu
 func processMenuLinks(menuJSON []byte, baseURL string) ([]byte, error) {
-	// Parse the JSON
-	var menuData map[string][]map[string]interface{}
-	if err := json.Unmarshal(menuJSON, &menuData); err != nil {
+	var dailyMenu ai.DailyMenu
+	if err := json.Unmarshal(menuJSON, &dailyMenu); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal menu JSON: %w", err)
 	}
 
 	// Process each day's menu items
-	for day, menuItems := range menuData {
-		for i, item := range menuItems {
-			// Check if the item has a link
-			if link, ok := item["link"].(string); ok && link != "" {
-				// Check if it's a relative URL
-				if strings.HasPrefix(link, "/") {
-					// Create the full URL by combining base URL and relative path
-					item["link"] = baseURL + link
-					menuData[day][i] = item
-				}
+	for day, items := range dailyMenu.Menu {
+		for i, item := range items {
+			if item.Link != "" && strings.HasPrefix(item.Link, "/") {
+				dailyMenu.Menu[day][i].Link = baseURL + item.Link
 			}
 		}
 	}
 
-	// Convert back to JSON
-	processedJSON, err := json.Marshal(menuData)
+	processedJSON, err := json.Marshal(dailyMenu)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal processed menu: %w", err)
 	}

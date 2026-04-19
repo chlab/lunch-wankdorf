@@ -17,6 +17,28 @@ const (
 	completionTimeout    = 3 * time.Minute
 )
 
+// MenuItem represents a single dish on a restaurant menu.
+type MenuItem struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Type        string `json:"type"`
+	Icon        string `json:"icon"`
+	Link        string `json:"link,omitempty"`
+	Restaurant  string `json:"restaurant,omitempty"`
+}
+
+// DailyMenu wraps a per-day menu (HTML restaurants).
+type DailyMenu struct {
+	Type string                `json:"type"`
+	Menu map[string][]MenuItem `json:"menu"`
+}
+
+// WeeklyMenu wraps a flat list of items (PDF restaurants).
+type WeeklyMenu struct {
+	Type string     `json:"type"`
+	Menu []MenuItem `json:"menu"`
+}
+
 // Icons list for menu items
 var IconsList = []string{
 	"bento",
@@ -138,21 +160,16 @@ Here is the extracted HTML of the menu:
 	}
 
 	// Parse the days of the week structure
-	var dailyMenu map[string]interface{}
+	var dailyMenu map[string][]MenuItem
 	if err := json.Unmarshal([]byte(cleanedJSON), &dailyMenu); err != nil {
 		return nil, fmt.Errorf("failed to parse menu JSON: %w", err)
 	}
 
-	// Create the new structure
-	finalMenu := struct {
-		Type string                 `json:"type"`
-		Menu map[string]interface{} `json:"menu"`
-	}{
+	finalMenu := DailyMenu{
 		Type: "daily",
 		Menu: dailyMenu,
 	}
 
-	// Convert back to JSON
 	finalJSON, err := json.Marshal(finalMenu)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal final menu: %w", err)
@@ -190,22 +207,20 @@ Extracted PDF content:
 	}
 
 	// Try to parse the JSON - it might be in different formats
-	var parsedItems []map[string]interface{}
+	var parsedItems []MenuItem
 
 	// First try parsing as array of items directly
 	if err := json.Unmarshal([]byte(cleanedJSON), &parsedItems); err != nil {
-		// Check for common JSON structures
-
 		// Try menuItems field
 		var menuItemsObject struct {
-			MenuItems []map[string]interface{} `json:"menuItems"`
+			MenuItems []MenuItem `json:"menuItems"`
 		}
 		if jsonErr := json.Unmarshal([]byte(cleanedJSON), &menuItemsObject); jsonErr == nil && len(menuItemsObject.MenuItems) > 0 {
 			parsedItems = menuItemsObject.MenuItems
 		} else {
 			// Try menuOptions field (what OpenAI seems to be returning)
 			var menuOptionsObject struct {
-				MenuOptions []map[string]interface{} `json:"menuOptions"`
+				MenuOptions []MenuItem `json:"menuOptions"`
 			}
 			if jsonErr := json.Unmarshal([]byte(cleanedJSON), &menuOptionsObject); jsonErr == nil && len(menuOptionsObject.MenuOptions) > 0 {
 				parsedItems = menuOptionsObject.MenuOptions
@@ -217,20 +232,15 @@ Extracted PDF content:
 
 	// Add restaurant and link fields to each menu item
 	for i := range parsedItems {
-		parsedItems[i]["restaurant"] = restaurantName
-		parsedItems[i]["link"] = pdfURL
+		parsedItems[i].Restaurant = restaurantName
+		parsedItems[i].Link = pdfURL
 	}
 
-	// Create the final structure
-	finalMenu := struct {
-		Type string                   `json:"type"`
-		Menu []map[string]interface{} `json:"menu"`
-	}{
+	finalMenu := WeeklyMenu{
 		Type: "weekly",
 		Menu: parsedItems,
 	}
 
-	// Convert back to JSON
 	finalJSON, err := json.Marshal(finalMenu)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal final menu: %w", err)
