@@ -121,7 +121,8 @@ func DownloadPDF(pdfURL, outputPath string) error {
 
 	// Download the PDF
 	log.Printf("Downloading PDF from %s to %s...", pdfURL, outputPath)
-	resp, err := http.Get(pdfURL)
+	client := &http.Client{Timeout: httpRequestTimeout}
+	resp, err := client.Get(pdfURL)
 	if err != nil {
 		return fmt.Errorf("error downloading PDF: %w", err)
 	}
