@@ -46,7 +46,6 @@ func OptimizeHTML(html string) string {
 func minimizeHTML(htmlContent string) string {
 	// Initialize minifier
 	m := minify.New()
-	m.AddFunc("text/html", html.Minify)
 	m.Add("text/html", &html.Minifier{
 		KeepQuotes: true,
 	})
