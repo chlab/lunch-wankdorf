@@ -14,6 +14,8 @@ import (
 	"github.com/gocolly/colly/v2"
 )
 
+const userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+
 // MenuData contains the scraped content
 type MenuData struct {
 	Content string
@@ -27,7 +29,7 @@ func ScrapeMenuContent(url string, debugMode ...bool) (*MenuData, error) {
 	// Initialize a Colly collector
 	c := colly.NewCollector(
 		// Adjust user agent to avoid being blocked
-		colly.UserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"),
+		colly.UserAgent(userAgent),
 	)
 
 	// Look for main content divs that might contain the menu
@@ -60,7 +62,7 @@ func ScrapeMenuContent(url string, debugMode ...bool) (*MenuData, error) {
 func FetchPDFMenuURL(url string, menuSelector string) (string, error) {
 	// Create a new collector
 	c := colly.NewCollector(
-		colly.UserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"),
+		colly.UserAgent(userAgent),
 	)
 
 	var pdfURL string
