@@ -170,14 +170,7 @@ func processHTMLMenu(restaurant RestaurantMenu, config Config) error {
 	}
 
 	// Print a sample of the content
-	preview := menuData
-	if len(preview) > 500 {
-		preview = preview[:500] + "..."
-	}
-	log.Println("Menu Content Sample:")
-	log.Println("=============")
-	log.Println(preview)
-	log.Println("=============")
+	logPreview(menuData)
 
 	// Abort menu parsing if dry run is enabled
 	if config.DryRun {
@@ -281,6 +274,16 @@ func processMenuLinks(menu *ai.DailyMenu, baseURL string) {
 			}
 		}
 	}
+}
+
+func logPreview(content string) {
+	if len(content) > 500 {
+		content = content[:500] + "..."
+	}
+	log.Println("Menu Content Sample:")
+	log.Println("=============")
+	log.Println(content)
+	log.Println("=============")
 }
 
 // outputAndUpload marshals the menu once, then writes debug files, prints output,
