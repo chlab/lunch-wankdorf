@@ -3,6 +3,7 @@ package scraper
 import (
 	"bytes"
 	"fmt"
+	gohtml "html"
 	"regexp"
 	"strings"
 
@@ -88,11 +89,8 @@ func cleanHTML(htmlContent string) string {
 	htmlContent = reDisplayNone.ReplaceAllString(htmlContent, "")
 	htmlContent = reVisHidden.ReplaceAllString(htmlContent, "")
 
-	// Replace common entities
-	htmlContent = strings.ReplaceAll(htmlContent, "&nbsp;", " ")
-	htmlContent = strings.ReplaceAll(htmlContent, "&amp;", "&")
-	htmlContent = strings.ReplaceAll(htmlContent, "&lt;", "<")
-	htmlContent = strings.ReplaceAll(htmlContent, "&gt;", ">")
+	// Decode all HTML entities (covers &nbsp;, &amp;, &lt;, &gt;, numeric entities, etc.)
+	htmlContent = gohtml.UnescapeString(htmlContent)
 
 	return htmlContent
 }
