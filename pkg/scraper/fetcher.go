@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -40,7 +41,7 @@ func ScrapeMenuContent(url string, debugMode ...bool) (*MenuData, error) {
 	c.OnHTML("div", func(e *colly.HTMLElement) {
 		html, err := e.DOM.Html()
 		if err != nil {
-			fmt.Printf("Error getting HTML: %v\n", err)
+			log.Printf("Error getting HTML: %v", err)
 			return
 		}
 		menuContent.WriteString(html)
@@ -48,7 +49,7 @@ func ScrapeMenuContent(url string, debugMode ...bool) (*MenuData, error) {
 
 	// Error handling
 	c.OnError(func(r *colly.Response, err error) {
-		fmt.Println("Request URL:", r.Request.URL, "failed with response:", r, "\nError:", err)
+		log.Printf("Request URL: %s failed with response: %v, Error: %v", r.Request.URL, r, err)
 	})
 
 	// Start scraping
@@ -82,14 +83,14 @@ func FetchPDFMenuURL(url string, menuSelector string) (string, error) {
 			if pdfURL != "" {
 				pdfFound = true
 				firstItem = false
-				fmt.Printf("Found menu PDF URL: %s\n", pdfURL)
+				log.Printf("Found menu PDF URL: %s", pdfURL)
 			}
 		}
 	})
 
 	// Handle errors
 	c.OnError(func(r *colly.Response, err error) {
-		fmt.Printf("Request URL: %s failed with error: %v\n", r.Request.URL, err)
+		log.Printf("Request URL: %s failed with error: %v", r.Request.URL, err)
 	})
 
 	// Set timeout for the request
@@ -119,7 +120,7 @@ func DownloadPDF(pdfURL, outputPath string) error {
 	defer file.Close()
 
 	// Download the PDF
-	fmt.Printf("Downloading PDF from %s to %s...\n", pdfURL, outputPath)
+	log.Printf("Downloading PDF from %s to %s...", pdfURL, outputPath)
 	resp, err := http.Get(pdfURL)
 	if err != nil {
 		return fmt.Errorf("error downloading PDF: %w", err)
@@ -137,7 +138,7 @@ func DownloadPDF(pdfURL, outputPath string) error {
 		return fmt.Errorf("error saving PDF data: %w", err)
 	}
 
-	fmt.Printf("Download complete! %d bytes written to %s\n", bytesWritten, outputPath)
+	log.Printf("Download complete! %d bytes written to %s", bytesWritten, outputPath)
 	return nil
 }
 
@@ -154,10 +155,10 @@ func ScrapeEspaceWebsite(url string, debug bool) (*MenuData, error) {
 
 	// Don't run in headless mode if debug mode is enabled
 	if debug {
-		fmt.Println("Debug mode enabled: Chrome browser will stay open for inspection")
+		log.Println("Debug mode enabled: Chrome browser will stay open for inspection")
 		opts = append(opts, chromedp.Flag("headless", false))          // Disable headless mode
 		opts = append(opts, chromedp.Flag("enable-automation", false)) // Hide automation banner
-		fmt.Println("✓ Configured Chrome to run in visible mode")
+		log.Println("Configured Chrome to run in visible mode")
 	} else {
 		opts = append(opts, chromedp.Flag("headless", true)) // Enable headless mode
 	}
@@ -170,7 +171,7 @@ func ScrapeEspaceWebsite(url string, debug bool) (*MenuData, error) {
 	ctx, cancel := chromedp.NewContext(allocCtx,
 		chromedp.WithLogf(func(format string, args ...interface{}) {
 			if debug {
-				fmt.Printf("ChromeDP: "+format+"\n", args...)
+				log.Printf("ChromeDP: "+format, args...)
 			}
 		}),
 	)
@@ -198,8 +199,8 @@ func ScrapeEspaceWebsite(url string, debug bool) (*MenuData, error) {
 	)
 	if err != nil {
 		if debug {
-			fmt.Printf("Error during initial page setup: %v\n", err)
-			fmt.Println("Keeping browser open for inspection. Press Ctrl+C to exit.")
+			log.Printf("Error during initial page setup: %v", err)
+			log.Println("Keeping browser open for inspection. Press Ctrl+C to exit.")
 			select {} // Block indefinitely in debug mode
 		}
 		return nil, fmt.Errorf("failed to setup page: %w", err)
@@ -220,7 +221,7 @@ func ScrapeEspaceWebsite(url string, debug bool) (*MenuData, error) {
 		)
 		if err != nil {
 			if debug {
-				fmt.Printf("Error scraping %s menu: %v\n", dayName, err)
+				log.Printf("Error scraping %s menu: %v", dayName, err)
 				continue // Try next day in debug mode
 			}
 			return nil, fmt.Errorf("failed to scrape %s menu: %w", dayName, err)
@@ -229,15 +230,15 @@ func ScrapeEspaceWebsite(url string, debug bool) (*MenuData, error) {
 		// Add day header and append to combined content
 		allMenus.WriteString(fmt.Sprintf("\n<!-- %s Menu -->\n<h2>%s</h2>\n%s\n", dayName, dayName, dayMenu))
 
-		fmt.Printf("Scraped %s menu (length: %d bytes)\n", dayName, len(dayMenu))
+		log.Printf("Scraped %s menu (length: %d bytes)", dayName, len(dayMenu))
 	}
 
 	// Get the combined content
 	htmlContent := allMenus.String()
 
 	if debug {
-		fmt.Printf("Successfully scraped all weekly menus (total: %d bytes)\n", len(htmlContent))
-		fmt.Println("Keeping browser open for inspection. Press Ctrl+C to exit.")
+		log.Printf("Successfully scraped all weekly menus (total: %d bytes)", len(htmlContent))
+		log.Println("Keeping browser open for inspection. Press Ctrl+C to exit.")
 		select {} // Block indefinitely in debug mode
 	}
 

@@ -102,7 +102,7 @@ func Run(config Config) {
 		log.Fatalf("Restaurant with ID '%s' not found", restaurantID)
 	}
 
-	fmt.Printf("Processing menu for %s from %s\n", restaurant.Name, restaurant.URL)
+	log.Printf("Processing menu for %s from %s", restaurant.Name, restaurant.URL)
 
 	// Handle different menu types (HTML or PDF)
 	switch restaurant.MenuType {
@@ -118,7 +118,7 @@ func Run(config Config) {
 // processHTMLMenu handles HTML-based menus
 func processHTMLMenu(restaurant RestaurantMenu, config Config) {
 	// Fetch the restaurant menu content
-	fmt.Printf("Scraping HTML menu data for %s\n", restaurant.Name)
+	log.Printf("Scraping HTML menu data for %s", restaurant.Name)
 	var htmlContent *scraper.MenuData
 	var err error
 
@@ -146,7 +146,7 @@ func processHTMLMenu(restaurant RestaurantMenu, config Config) {
 		if err != nil {
 			log.Printf("Warning: Could not write raw HTML to debug file: %v", err)
 		} else {
-			fmt.Printf("Saved raw HTML to %s\n", htmlDebugFile)
+			log.Printf("Saved raw HTML to %s", htmlDebugFile)
 		}
 	}
 
@@ -160,12 +160,12 @@ func processHTMLMenu(restaurant RestaurantMenu, config Config) {
 		if err != nil {
 			log.Printf("Warning: Could not write menu content to debug file: %v", err)
 		} else {
-			fmt.Printf("Saved menu content to %s\n", menuContentDebugFile)
+			log.Printf("Saved menu content to %s", menuContentDebugFile)
 		}
 	}
 
 	contentLength := len(menuData)
-	fmt.Printf("Successfully extracted menu content (%d bytes)\n", contentLength)
+	log.Printf("Successfully extracted menu content (%d bytes)", contentLength)
 
 	if contentLength == 0 {
 		log.Fatalf("No menu content found on the page")
@@ -176,19 +176,19 @@ func processHTMLMenu(restaurant RestaurantMenu, config Config) {
 	if len(preview) > 500 {
 		preview = preview[:500] + "..."
 	}
-	fmt.Println("\nMenu Content Sample:")
-	fmt.Println("=============")
-	fmt.Println(preview)
-	fmt.Println("=============")
+	log.Println("Menu Content Sample:")
+	log.Println("=============")
+	log.Println(preview)
+	log.Println("=============")
 
 	// Abort menu parsing if dry run is enabled
 	if config.DryRun {
-		fmt.Println("Dry Run, aborting parsing menu...")
+		log.Println("Dry Run, aborting parsing menu...")
 		return
 	}
 
 	// Parse menu using OpenAI
-	fmt.Println("Parsing menu data with OpenAI...")
+	log.Println("Parsing menu data with OpenAI...")
 	parsedMenu, err := ai.ParseRestaurantHtmlMenu(menuData)
 	if err != nil {
 		file.WriteToDebugFile(parsedMenu, "parsed_menu", restaurant.Name, "json")
@@ -215,13 +215,11 @@ func processHTMLMenu(restaurant RestaurantMenu, config Config) {
 		if err != nil {
 			log.Printf("Warning: Could not write parsed menu to debug file: %v", err)
 		} else {
-			fmt.Printf("Saved parsed menu to %s\n", parsedMenuDebugFile)
+			log.Printf("Saved parsed menu to %s", parsedMenuDebugFile)
 		}
 	}
 
 	// Output the parsed menu
-	fmt.Println("\nWeekly Menu:")
-	fmt.Println("===========")
 	fmt.Println(prettyJSON.String())
 
 	// Upload to R2 if enabled
@@ -229,7 +227,7 @@ func processHTMLMenu(restaurant RestaurantMenu, config Config) {
 		if err := uploadMenuToR2(processedMenu, restaurant.Name); err != nil {
 			log.Printf("Warning: Failed to upload menu to R2: %v", err)
 		} else {
-			fmt.Println("Successfully uploaded menu to R2 storage")
+			log.Println("Successfully uploaded menu to R2 storage")
 		}
 	}
 }
@@ -240,8 +238,8 @@ func processPDFMenu(restaurant RestaurantMenu, config Config) {
 		log.Fatalf("MenuSelector is required for PDF menu restaurants but not configured for %s", restaurant.Name)
 	}
 
-	fmt.Printf("Fetching PDF menu for %s\n", restaurant.Name)
-	fmt.Printf("Looking for menu link with selector: %s\n", restaurant.MenuSelector)
+	log.Printf("Fetching PDF menu for %s", restaurant.Name)
+	log.Printf("Looking for menu link with selector: %s", restaurant.MenuSelector)
 
 	// Fetch the PDF menu URL using the selector
 	pdfURL, err := scraper.FetchPDFMenuURL(restaurant.URL, restaurant.MenuSelector)
@@ -255,7 +253,7 @@ func processPDFMenu(restaurant RestaurantMenu, config Config) {
 		// In debug mode, save the PDF to the debug directory
 		pdfFilePath = filepath.Join("debug", fmt.Sprintf("%s_menu.pdf",
 			strings.ToLower(restaurant.Name)))
-		fmt.Printf("Debug mode: Saving PDF to %s\n", pdfFilePath)
+		log.Printf("Debug mode: Saving PDF to %s", pdfFilePath)
 	} else {
 		// In production mode, save to a temporary directory
 		tempDir, err := os.MkdirTemp("", "menu-pdf")
@@ -273,16 +271,16 @@ func processPDFMenu(restaurant RestaurantMenu, config Config) {
 		log.Fatalf("Error downloading PDF: %v", err)
 	}
 
-	fmt.Printf("Successfully downloaded PDF menu for %s\n", restaurant.Name)
+	log.Printf("Successfully downloaded PDF menu for %s", restaurant.Name)
 
 	// Abort menu parsing if dry run is enabled
 	if config.DryRun {
-		fmt.Println("Dry Run, aborting parsing menu...")
+		log.Println("Dry Run, aborting parsing menu...")
 		return
 	}
 
 	// Extract text from PDF
-	fmt.Println("Extracting text from PDF...")
+	log.Println("Extracting text from PDF...")
 	pdfText, err := scraper.ExtractTextFromPDF(pdfFilePath, 1) // Extract only first page
 	if err != nil {
 		log.Fatalf("Error extracting text from PDF: %v", err)
@@ -294,12 +292,12 @@ func processPDFMenu(restaurant RestaurantMenu, config Config) {
 		if err != nil {
 			log.Printf("Warning: Could not write extracted PDF text to debug file: %v", err)
 		} else {
-			fmt.Printf("Saved extracted PDF text to %s\n", textDebugFile)
+			log.Printf("Saved extracted PDF text to %s", textDebugFile)
 		}
 	}
 
 	// Parse PDF menu using OpenAI
-	fmt.Println("Parsing PDF menu data with OpenAI...")
+	log.Println("Parsing PDF menu data with OpenAI...")
 	parsedMenu, err := ai.ParseRestaurantPdfMenu(pdfText, restaurant.Name, pdfURL)
 	if err != nil {
 		if config.DebugMode {
@@ -321,13 +319,11 @@ func processPDFMenu(restaurant RestaurantMenu, config Config) {
 		if err != nil {
 			log.Printf("Warning: Could not write parsed menu to debug file: %v", err)
 		} else {
-			fmt.Printf("Saved parsed menu to %s\n", parsedMenuDebugFile)
+			log.Printf("Saved parsed menu to %s", parsedMenuDebugFile)
 		}
 	}
 
 	// Output the parsed menu
-	fmt.Println("\nWeekly Menu:")
-	fmt.Println("===========")
 	fmt.Println(prettyJSON.String())
 
 	// Upload to R2 if enabled
@@ -335,7 +331,7 @@ func processPDFMenu(restaurant RestaurantMenu, config Config) {
 		if err := uploadMenuToR2(parsedMenu, restaurant.Name); err != nil {
 			log.Printf("Warning: Failed to upload menu to R2: %v", err)
 		} else {
-			fmt.Println("Successfully uploaded menu to R2 storage")
+			log.Println("Successfully uploaded menu to R2 storage")
 		}
 	}
 }

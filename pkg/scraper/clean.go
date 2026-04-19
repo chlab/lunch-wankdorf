@@ -2,8 +2,8 @@ package scraper
 
 import (
 	"bytes"
-	"fmt"
 	gohtml "html"
+	"log"
 	"regexp"
 	"strings"
 
@@ -58,11 +58,11 @@ func minimizeHTML(htmlContent string) string {
 	var minifiedContent string
 	err := m.Minify("text/html", output, input)
 	if err != nil {
-		fmt.Printf("Error minifying HTML: %v, using original content\n", err)
+		log.Printf("Error minifying HTML: %v, using original content", err)
 		minifiedContent = htmlContent
 	} else {
 		minified := output.String()
-		fmt.Printf("Minified HTML from %d to %d bytes (%.1f%%)\n",
+		log.Printf("Minified HTML from %d to %d bytes (%.1f%%)",
 			len(htmlContent),
 			len(minified),
 			float64(len(minified))/float64(len(htmlContent))*100)

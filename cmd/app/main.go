@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"log"
 
 	"github.com/chlab/lunch-wankdorf/internal/app"
 )
@@ -23,6 +23,6 @@ func main() {
 		UploadToR2:   *uploadToR2,
 	}
 
-	fmt.Println("Starting Lunch Wankdorf application...")
+	log.Println("Starting Lunch Wankdorf application...")
 	app.Run(config)
 }
