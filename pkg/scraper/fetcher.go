@@ -194,8 +194,15 @@ func ScrapeEspaceWebsite(url string, debug bool) (*MenuData, error) {
 		browser.GrantPermissions([]browser.PermissionType{}),
 		// Wait for the weekday navigation to load
 		chromedp.WaitVisible(`[mat-tab-link]`, chromedp.ByQuery),
-		// Decline cookies if the banner appears
-		chromedp.Click(`#cookiescript_reject`, chromedp.ByQuery),
+		// Decline cookies if the banner appears (ignore if not present)
+		chromedp.ActionFunc(func(ctx context.Context) error {
+			// Try to click the cookie reject button, but don't fail if it's not there
+			err := chromedp.Click(`#cookiescript_reject`, chromedp.ByQuery).Do(ctx)
+			if err != nil {
+				log.Printf("Cookie banner not found or not clickable, continuing: %v", err)
+			}
+			return nil
+		}),
 		chromedp.Sleep(2*time.Second),
 	)
 	if err != nil {
