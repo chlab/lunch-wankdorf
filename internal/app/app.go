@@ -2,6 +2,7 @@ package app
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -10,10 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/chlab/lunch-wankdorf/pkg/ai"
 	"github.com/chlab/lunch-wankdorf/pkg/file"
 	"github.com/chlab/lunch-wankdorf/pkg/scraper"
@@ -404,19 +404,14 @@ func uploadMenuToR2(menuJSON []byte, restaurantName string) error {
 		return fmt.Errorf("missing required Cloudflare R2 credentials in environment variables")
 	}
 
-	// Create an AWS session configured for Cloudflare R2
-	sess, err := session.NewSession(&aws.Config{
-		Credentials:      credentials.NewStaticCredentials(accessKeyID, secretAccessKey, ""),
-		Endpoint:         aws.String(fmt.Sprintf("https://%s.eu.r2.cloudflarestorage.com", accountID)),
-		Region:           aws.String("auto"),
-		S3ForcePathStyle: aws.Bool(true),
+	// Create an S3 client configured for Cloudflare R2
+	endpoint := fmt.Sprintf("https://%s.eu.r2.cloudflarestorage.com", accountID)
+	svc := s3.New(s3.Options{
+		BaseEndpoint: aws.String(endpoint),
+		Region:       "auto",
+		Credentials:  credentials.NewStaticCredentialsProvider(accessKeyID, secretAccessKey, ""),
+		UsePathStyle: true,
 	})
-	if err != nil {
-		return fmt.Errorf("failed to create AWS session: %w", err)
-	}
-
-	// Create an S3 service client
-	svc := s3.New(sess)
 
 	// Generate a filename with the restaurant name and current week number
 	// Format: <restaurantname>_<weeknumber>_<year>.json
@@ -425,11 +420,12 @@ func uploadMenuToR2(menuJSON []byte, restaurantName string) error {
 	filename := fmt.Sprintf("%s_%d_%d.json", lowercaseRestaurantName, week, year)
 
 	// Upload the file to R2
-	_, err = svc.PutObject(&s3.PutObjectInput{
+	contentType := "application/json"
+	_, err := svc.PutObject(context.Background(), &s3.PutObjectInput{
 		Bucket:      aws.String(bucketName),
 		Key:         aws.String(filename),
 		Body:        bytes.NewReader(menuJSON),
-		ContentType: aws.String("application/json"),
+		ContentType: &contentType,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to upload file to R2: %w", err)
