@@ -10,6 +10,30 @@ import (
 	"github.com/tdewolff/minify/v2/html"
 )
 
+// Pre-compiled regexes for HTML cleaning
+var (
+	reComment       = regexp.MustCompile(`<!--[\s\S]*?-->`)
+	reStyle         = regexp.MustCompile(`<style[^>]*>[\s\S]*?</style>`)
+	reScript        = regexp.MustCompile(`<script[^>]*>[\s\S]*?</script>`)
+	reSVG           = regexp.MustCompile(`<svg[^>]*>[\s\S]*?</svg>`)
+	reImg           = regexp.MustCompile(`<img[^>]*>`)
+	reIframe        = regexp.MustCompile(`<iframe[^>]*>[\s\S]*?</iframe>`)
+	reVideo         = regexp.MustCompile(`<video[^>]*>[\s\S]*?</video>`)
+	reAudio         = regexp.MustCompile(`<audio[^>]*>[\s\S]*?</audio>`)
+	reCanvas        = regexp.MustCompile(`<canvas[^>]*>[\s\S]*?</canvas>`)
+	rePath          = regexp.MustCompile(`<path[^>]*>[\s\S]*?</path>`)
+	reObject        = regexp.MustCompile(`<object[^>]*>[\s\S]*?</object>`)
+	reHidden        = regexp.MustCompile(`<[^>]* hidden[^>]*>[\s\S]*?</[^>]*>`)
+	reDisplayNone   = regexp.MustCompile(`<[^>]* style="[^"]*display:\s*none[^"]*"[^>]*>[\s\S]*?</[^>]*>`)
+	reVisHidden     = regexp.MustCompile(`<[^>]* style="[^"]*visibility:\s*hidden[^"]*"[^>]*>[\s\S]*?</[^>]*>`)
+	reClassDouble   = regexp.MustCompile(` class="[^"]*"`)
+	reClassSingle   = regexp.MustCompile(` class='[^']*'`)
+	reStyleDouble   = regexp.MustCompile(` style="[^"]*"`)
+	reStyleSingle   = regexp.MustCompile(` style='[^']*'`)
+	reTargetDouble  = regexp.MustCompile(` target="[^"]*"`)
+	reTargetSingle  = regexp.MustCompile(` target='[^']*'`)
+)
+
 func OptimizeHTML(html string) string {
 	html = minimizeHTML(html)
 	html = cleanHTML(html)
@@ -47,70 +71,41 @@ func minimizeHTML(htmlContent string) string {
 	return minifiedContent
 }
 
-// CleanHTML removes unnecessary parts of HTML like images, SVGs, comments, etc.
-func cleanHTML(html string) string {
-	// Remove HTML comments
-	html = regexp.MustCompile(`<!--[\s\S]*?-->`).ReplaceAllString(html, "")
-
-	// Remove CSS
-	html = regexp.MustCompile(`<style[^>]*>[\s\S]*?</style>`).ReplaceAllString(html, "")
-
-	// Remove JS
-	html = regexp.MustCompile(`<script[^>]*>[\s\S]*?</script>`).ReplaceAllString(html, "")
-
-	// Remove SVG elements
-	html = regexp.MustCompile(`<svg[^>]*>[\s\S]*?</svg>`).ReplaceAllString(html, "")
-
-	// Remove img tags
-	html = regexp.MustCompile(`<img[^>]*>`).ReplaceAllString(html, "")
-
-	// Remove iframe tags
-	html = regexp.MustCompile(`<iframe[^>]*>[\s\S]*?</iframe>`).ReplaceAllString(html, "")
-
-	// Remove video tags
-	html = regexp.MustCompile(`<video[^>]*>[\s\S]*?</video>`).ReplaceAllString(html, "")
-
-	// Remove audio tags
-	html = regexp.MustCompile(`<audio[^>]*>[\s\S]*?</audio>`).ReplaceAllString(html, "")
-
-	// Remove canvas tags
-	html = regexp.MustCompile(`<canvas[^>]*>[\s\S]*?</canvas>`).ReplaceAllString(html, "")
-
-	// Remove path tags
-	html = regexp.MustCompile(`<path[^>]*>[\s\S]*?</path>`).ReplaceAllString(html, "")
-
-	// Remove object tags
-	html = regexp.MustCompile(`<object[^>]*>[\s\S]*?</object>`).ReplaceAllString(html, "")
-
-	// Remove hidden elements
-	html = regexp.MustCompile(`<[^>]* hidden[^>]*>[\s\S]*?</[^>]*>`).ReplaceAllString(html, "")
-	html = regexp.MustCompile(`<[^>]* style="[^"]*display:\s*none[^"]*"[^>]*>[\s\S]*?</[^>]*>`).ReplaceAllString(html, "")
-	html = regexp.MustCompile(`<[^>]* style="[^"]*visibility:\s*hidden[^"]*"[^>]*>[\s\S]*?</[^>]*>`).ReplaceAllString(html, "")
+// cleanHTML removes unnecessary parts of HTML like images, SVGs, comments, etc.
+func cleanHTML(htmlContent string) string {
+	htmlContent = reComment.ReplaceAllString(htmlContent, "")
+	htmlContent = reStyle.ReplaceAllString(htmlContent, "")
+	htmlContent = reScript.ReplaceAllString(htmlContent, "")
+	htmlContent = reSVG.ReplaceAllString(htmlContent, "")
+	htmlContent = reImg.ReplaceAllString(htmlContent, "")
+	htmlContent = reIframe.ReplaceAllString(htmlContent, "")
+	htmlContent = reVideo.ReplaceAllString(htmlContent, "")
+	htmlContent = reAudio.ReplaceAllString(htmlContent, "")
+	htmlContent = reCanvas.ReplaceAllString(htmlContent, "")
+	htmlContent = rePath.ReplaceAllString(htmlContent, "")
+	htmlContent = reObject.ReplaceAllString(htmlContent, "")
+	htmlContent = reHidden.ReplaceAllString(htmlContent, "")
+	htmlContent = reDisplayNone.ReplaceAllString(htmlContent, "")
+	htmlContent = reVisHidden.ReplaceAllString(htmlContent, "")
 
 	// Replace common entities
-	html = strings.ReplaceAll(html, "&nbsp;", " ")
-	html = strings.ReplaceAll(html, "&amp;", "&")
-	html = strings.ReplaceAll(html, "&lt;", "<")
-	html = strings.ReplaceAll(html, "&gt;", ">")
+	htmlContent = strings.ReplaceAll(htmlContent, "&nbsp;", " ")
+	htmlContent = strings.ReplaceAll(htmlContent, "&amp;", "&")
+	htmlContent = strings.ReplaceAll(htmlContent, "&lt;", "<")
+	htmlContent = strings.ReplaceAll(htmlContent, "&gt;", ">")
 
-	return html
+	return htmlContent
 }
 
 // stripTags removes class and style attributes from HTML tags
-func stripTags(html string) string {
-	// Remove class attributes
-	html = regexp.MustCompile(` class="[^"]*"`).ReplaceAllString(html, "")
-	html = regexp.MustCompile(` class='[^']*'`).ReplaceAllString(html, "")
-
-	// Remove style attributes
-	html = regexp.MustCompile(` style="[^"]*"`).ReplaceAllString(html, "")
-	html = regexp.MustCompile(` style='[^']*'`).ReplaceAllString(html, "")
-
-	// Remove target attributes
-	html = regexp.MustCompile(` target="[^"]*"`).ReplaceAllString(html, "")
-	html = regexp.MustCompile(` target='[^']*'`).ReplaceAllString(html, "")
-
-	return html
+func stripTags(htmlContent string) string {
+	htmlContent = reClassDouble.ReplaceAllString(htmlContent, "")
+	htmlContent = reClassSingle.ReplaceAllString(htmlContent, "")
+	htmlContent = reStyleDouble.ReplaceAllString(htmlContent, "")
+	htmlContent = reStyleSingle.ReplaceAllString(htmlContent, "")
+	htmlContent = reTargetDouble.ReplaceAllString(htmlContent, "")
+	htmlContent = reTargetSingle.ReplaceAllString(htmlContent, "")
+	return htmlContent
 }
 
 // all the SBB restaurants have a lot of redundant markdown, signaled by the string "Klimawirkung"
