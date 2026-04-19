@@ -7,7 +7,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/chromedp/cdproto/browser"
@@ -208,8 +210,7 @@ func ScrapeEspaceWebsite(url string, debug bool) (*MenuData, error) {
 	if err != nil {
 		if debug {
 			log.Printf("Error during initial page setup: %v", err)
-			log.Println("Keeping browser open for inspection. Press Ctrl+C to exit.")
-			select {} // Block indefinitely in debug mode
+			waitForInterrupt()
 		}
 		return nil, fmt.Errorf("failed to setup page: %w", err)
 	}
@@ -246,9 +247,18 @@ func ScrapeEspaceWebsite(url string, debug bool) (*MenuData, error) {
 
 	if debug {
 		log.Printf("Successfully scraped all weekly menus (total: %d bytes)", len(htmlContent))
-		log.Println("Keeping browser open for inspection. Press Ctrl+C to exit.")
-		select {} // Block indefinitely in debug mode
+		waitForInterrupt()
 	}
 
 	return &MenuData{Content: htmlContent}, nil
+}
+
+// waitForInterrupt blocks until an interrupt signal (Ctrl+C) is received,
+// allowing the debug browser to stay open for inspection.
+func waitForInterrupt() {
+	log.Println("Keeping browser open for inspection. Press Ctrl+C to exit.")
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
+	<-sig
+	log.Println("Received interrupt, shutting down.")
 }
