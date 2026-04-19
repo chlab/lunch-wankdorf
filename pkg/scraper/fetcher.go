@@ -98,7 +98,7 @@ func FetchPDFMenuURL(url string, menuSelector string) (string, error) {
 	// Start scraping
 	err := c.Visit(url)
 	if err != nil {
-		return "", fmt.Errorf("error visiting %s: %v", url, err)
+		return "", fmt.Errorf("error visiting %s: %w", url, err)
 	}
 
 	// Check if a PDF URL was found
@@ -114,7 +114,7 @@ func DownloadPDF(pdfURL, outputPath string) error {
 	// Create output file
 	file, err := os.Create(outputPath)
 	if err != nil {
-		return fmt.Errorf("error creating file %s: %v", outputPath, err)
+		return fmt.Errorf("error creating file %s: %w", outputPath, err)
 	}
 	defer file.Close()
 
@@ -122,7 +122,7 @@ func DownloadPDF(pdfURL, outputPath string) error {
 	fmt.Printf("Downloading PDF from %s to %s...\n", pdfURL, outputPath)
 	resp, err := http.Get(pdfURL)
 	if err != nil {
-		return fmt.Errorf("error downloading PDF: %v", err)
+		return fmt.Errorf("error downloading PDF: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -134,7 +134,7 @@ func DownloadPDF(pdfURL, outputPath string) error {
 	// Copy PDF data to file
 	bytesWritten, err := io.Copy(file, resp.Body)
 	if err != nil {
-		return fmt.Errorf("error saving PDF data: %v", err)
+		return fmt.Errorf("error saving PDF data: %w", err)
 	}
 
 	fmt.Printf("Download complete! %d bytes written to %s\n", bytesWritten, outputPath)
@@ -202,7 +202,7 @@ func ScrapeEspaceWebsite(url string, debug bool) (*MenuData, error) {
 			fmt.Println("Keeping browser open for inspection. Press Ctrl+C to exit.")
 			select {} // Block indefinitely in debug mode
 		}
-		return nil, fmt.Errorf("failed to setup page: %v", err)
+		return nil, fmt.Errorf("failed to setup page: %w", err)
 	}
 
 	// Loop through each weekday (Monday to Friday)
@@ -223,7 +223,7 @@ func ScrapeEspaceWebsite(url string, debug bool) (*MenuData, error) {
 				fmt.Printf("Error scraping %s menu: %v\n", dayName, err)
 				continue // Try next day in debug mode
 			}
-			return nil, fmt.Errorf("failed to scrape %s menu: %v", dayName, err)
+			return nil, fmt.Errorf("failed to scrape %s menu: %w", dayName, err)
 		}
 
 		// Add day header and append to combined content

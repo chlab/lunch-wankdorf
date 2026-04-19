@@ -345,7 +345,7 @@ func processMenuLinks(menuJSON []byte, baseURL string) ([]byte, error) {
 	// Parse the JSON
 	var menuData map[string][]map[string]interface{}
 	if err := json.Unmarshal(menuJSON, &menuData); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal menu JSON: %v", err)
+		return nil, fmt.Errorf("failed to unmarshal menu JSON: %w", err)
 	}
 
 	// Process each day's menu items
@@ -366,7 +366,7 @@ func processMenuLinks(menuJSON []byte, baseURL string) ([]byte, error) {
 	// Convert back to JSON
 	processedJSON, err := json.Marshal(menuData)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal processed menu: %v", err)
+		return nil, fmt.Errorf("failed to marshal processed menu: %w", err)
 	}
 
 	return processedJSON, nil
@@ -429,7 +429,7 @@ func uploadMenuToR2(menuJSON []byte, restaurantName string) error {
 		S3ForcePathStyle: aws.Bool(true),
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create AWS session: %v", err)
+		return fmt.Errorf("failed to create AWS session: %w", err)
 	}
 
 	// Create an S3 service client
@@ -449,7 +449,7 @@ func uploadMenuToR2(menuJSON []byte, restaurantName string) error {
 		ContentType: aws.String("application/json"),
 	})
 	if err != nil {
-		return fmt.Errorf("failed to upload file to R2: %v", err)
+		return fmt.Errorf("failed to upload file to R2: %w", err)
 	}
 
 	return nil

@@ -101,7 +101,7 @@ func validateJSON(result string) (string, error) {
 			}
 		}
 
-		return result, fmt.Errorf("API returned invalid JSON: %v", err)
+		return result, fmt.Errorf("API returned invalid JSON: %w", err)
 	}
 
 	return result, nil
