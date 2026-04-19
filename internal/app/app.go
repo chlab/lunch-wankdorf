@@ -87,19 +87,19 @@ type Config struct {
 }
 
 // Run starts the application
-func Run(config Config) {
+func Run(config Config) error {
 	// Load environment variables from .env file
 	loadEnv()
 
 	restaurantID := config.RestaurantID
 	if restaurantID == "" {
-		log.Fatalf("Restaurant not defined")
+		return fmt.Errorf("restaurant not defined")
 	}
 
 	// Get restaurant menu configuration
 	restaurant, exists := restaurantMenus[restaurantID]
 	if !exists {
-		log.Fatalf("Restaurant with ID '%s' not found", restaurantID)
+		return fmt.Errorf("restaurant with ID '%s' not found", restaurantID)
 	}
 
 	log.Printf("Processing menu for %s from %s", restaurant.Name, restaurant.URL)
@@ -107,16 +107,16 @@ func Run(config Config) {
 	// Handle different menu types (HTML or PDF)
 	switch restaurant.MenuType {
 	case "html":
-		processHTMLMenu(restaurant, config)
+		return processHTMLMenu(restaurant, config)
 	case "pdf":
-		processPDFMenu(restaurant, config)
+		return processPDFMenu(restaurant, config)
 	default:
-		log.Fatalf("Unsupported menu type: %s", restaurant.MenuType)
+		return fmt.Errorf("unsupported menu type: %s", restaurant.MenuType)
 	}
 }
 
 // processHTMLMenu handles HTML-based menus
-func processHTMLMenu(restaurant RestaurantMenu, config Config) {
+func processHTMLMenu(restaurant RestaurantMenu, config Config) error {
 	// Fetch the restaurant menu content
 	log.Printf("Scraping HTML menu data for %s", restaurant.Name)
 	var htmlContent *scraper.MenuData
@@ -136,12 +136,11 @@ func processHTMLMenu(restaurant RestaurantMenu, config Config) {
 	}
 
 	if err != nil {
-		log.Fatalf("Error scraping menu data: %v", err)
+		return fmt.Errorf("error scraping menu data: %w", err)
 	}
 
 	// Save debug files if debug mode is enabled
 	if config.DebugMode {
-		// Save raw HTML content to debug file
 		htmlDebugFile, err := file.WriteToDebugFile([]byte(htmlContent.Content), "raw_html", restaurant.Name, "html")
 		if err != nil {
 			log.Printf("Warning: Could not write raw HTML to debug file: %v", err)
@@ -155,7 +154,6 @@ func processHTMLMenu(restaurant RestaurantMenu, config Config) {
 
 	// Save debug files if debug mode is enabled
 	if config.DebugMode {
-		// Save extracted menu content to debug file
 		menuContentDebugFile, err := file.WriteToDebugFile([]byte(menuData), "menu_content", restaurant.Name, "html")
 		if err != nil {
 			log.Printf("Warning: Could not write menu content to debug file: %v", err)
@@ -168,7 +166,7 @@ func processHTMLMenu(restaurant RestaurantMenu, config Config) {
 	log.Printf("Successfully extracted menu content (%d bytes)", contentLength)
 
 	if contentLength == 0 {
-		log.Fatalf("No menu content found on the page")
+		return fmt.Errorf("no menu content found on the page")
 	}
 
 	// Print a sample of the content
@@ -184,7 +182,7 @@ func processHTMLMenu(restaurant RestaurantMenu, config Config) {
 	// Abort menu parsing if dry run is enabled
 	if config.DryRun {
 		log.Println("Dry Run, aborting parsing menu...")
-		return
+		return nil
 	}
 
 	// Parse menu using OpenAI
@@ -192,7 +190,7 @@ func processHTMLMenu(restaurant RestaurantMenu, config Config) {
 	parsedMenu, err := ai.ParseRestaurantHtmlMenu(menuData)
 	if err != nil {
 		file.WriteToDebugFile(parsedMenu, "parsed_menu", restaurant.Name, "json")
-		log.Fatalf("Error parsing menu data: %v", err)
+		return fmt.Errorf("error parsing menu data: %w", err)
 	}
 
 	// Process the menu to add full URLs to links
@@ -210,7 +208,6 @@ func processHTMLMenu(restaurant RestaurantMenu, config Config) {
 
 	// Save debug files if debug mode is enabled
 	if config.DebugMode {
-		// Save parsed menu to debug file
 		parsedMenuDebugFile, err := file.WriteToDebugFile(prettyJSON.Bytes(), "parsed_menu", restaurant.Name, "json")
 		if err != nil {
 			log.Printf("Warning: Could not write parsed menu to debug file: %v", err)
@@ -230,12 +227,14 @@ func processHTMLMenu(restaurant RestaurantMenu, config Config) {
 			log.Println("Successfully uploaded menu to R2 storage")
 		}
 	}
+
+	return nil
 }
 
 // processPDFMenu handles PDF-based menus
-func processPDFMenu(restaurant RestaurantMenu, config Config) {
+func processPDFMenu(restaurant RestaurantMenu, config Config) error {
 	if restaurant.MenuSelector == "" {
-		log.Fatalf("MenuSelector is required for PDF menu restaurants but not configured for %s", restaurant.Name)
+		return fmt.Errorf("MenuSelector is required for PDF menu restaurants but not configured for %s", restaurant.Name)
 	}
 
 	log.Printf("Fetching PDF menu for %s", restaurant.Name)
@@ -244,7 +243,7 @@ func processPDFMenu(restaurant RestaurantMenu, config Config) {
 	// Fetch the PDF menu URL using the selector
 	pdfURL, err := scraper.FetchPDFMenuURL(restaurant.URL, restaurant.MenuSelector)
 	if err != nil {
-		log.Fatalf("Error fetching PDF URL: %v", err)
+		return fmt.Errorf("error fetching PDF URL: %w", err)
 	}
 
 	var pdfFilePath string
@@ -258,7 +257,7 @@ func processPDFMenu(restaurant RestaurantMenu, config Config) {
 		// In production mode, save to a temporary directory
 		tempDir, err := os.MkdirTemp("", "menu-pdf")
 		if err != nil {
-			log.Fatalf("Error creating temporary directory: %v", err)
+			return fmt.Errorf("error creating temporary directory: %w", err)
 		}
 		defer os.RemoveAll(tempDir)
 
@@ -268,7 +267,7 @@ func processPDFMenu(restaurant RestaurantMenu, config Config) {
 
 	// Download the PDF file
 	if err := scraper.DownloadPDF(pdfURL, pdfFilePath); err != nil {
-		log.Fatalf("Error downloading PDF: %v", err)
+		return fmt.Errorf("error downloading PDF: %w", err)
 	}
 
 	log.Printf("Successfully downloaded PDF menu for %s", restaurant.Name)
@@ -276,14 +275,14 @@ func processPDFMenu(restaurant RestaurantMenu, config Config) {
 	// Abort menu parsing if dry run is enabled
 	if config.DryRun {
 		log.Println("Dry Run, aborting parsing menu...")
-		return
+		return nil
 	}
 
 	// Extract text from PDF
 	log.Println("Extracting text from PDF...")
 	pdfText, err := scraper.ExtractTextFromPDF(pdfFilePath, 1) // Extract only first page
 	if err != nil {
-		log.Fatalf("Error extracting text from PDF: %v", err)
+		return fmt.Errorf("error extracting text from PDF: %w", err)
 	}
 
 	// Save extracted text to debug file if debug mode is enabled
@@ -303,7 +302,7 @@ func processPDFMenu(restaurant RestaurantMenu, config Config) {
 		if config.DebugMode {
 			file.WriteToDebugFile(parsedMenu, "parsed_menu", restaurant.Name, "json")
 		}
-		log.Fatalf("Error parsing PDF menu data: %v", err)
+		return fmt.Errorf("error parsing PDF menu data: %w", err)
 	}
 
 	// Format JSON for output
@@ -314,7 +313,6 @@ func processPDFMenu(restaurant RestaurantMenu, config Config) {
 
 	// Save debug files if debug mode is enabled
 	if config.DebugMode {
-		// Save parsed menu to debug file
 		parsedMenuDebugFile, err := file.WriteToDebugFile(prettyJSON.Bytes(), "parsed_menu", restaurant.Name, "json")
 		if err != nil {
 			log.Printf("Warning: Could not write parsed menu to debug file: %v", err)
@@ -334,6 +332,8 @@ func processPDFMenu(restaurant RestaurantMenu, config Config) {
 			log.Println("Successfully uploaded menu to R2 storage")
 		}
 	}
+
+	return nil
 }
 
 // processMenuLinks adds the restaurant's base URL to relative links in the menu

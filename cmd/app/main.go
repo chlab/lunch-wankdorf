@@ -24,5 +24,7 @@ func main() {
 	}
 
 	log.Println("Starting Lunch Wankdorf application...")
-	app.Run(config)
+	if err := app.Run(config); err != nil {
+		log.Fatalf("Error: %v", err)
+	}
 }
