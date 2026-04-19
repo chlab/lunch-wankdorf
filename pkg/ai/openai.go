@@ -105,32 +105,35 @@ func CreateCompletion(prompt string) (string, error) {
 	return resp.Choices[0].Message.Content, nil
 }
 
-// validateJSON validates that a string is valid JSON
-// and attempts to extract valid JSON if it's embedded in markdown or text
-func validateJSON(result string) (string, error) {
-	// Validate that the result is valid JSON
-	var jsonData interface{}
-	if err := json.Unmarshal([]byte(result), &jsonData); err != nil {
-		// If not valid JSON, try to extract JSON from the response
-		// Sometimes the model might include markdown backticks or explanations
-		jsonStartIdx := strings.Index(result, "{")
-		jsonEndIdx := strings.LastIndex(result, "}")
+// extractJSON attempts to extract a JSON string from an API response that may
+// be wrapped in markdown code blocks or contain explanatory text.
+func extractJSON(result string) string {
+	result = strings.TrimSpace(result)
 
-		if jsonStartIdx >= 0 && jsonEndIdx > jsonStartIdx {
-			jsonStr := result[jsonStartIdx : jsonEndIdx+1]
-			if err := json.Unmarshal([]byte(jsonStr), &jsonData); err == nil {
-				return jsonStr, nil
-			}
-		}
-
-		return result, fmt.Errorf("API returned invalid JSON: %w", err)
+	// Already looks like valid JSON
+	if strings.HasPrefix(result, "{") || strings.HasPrefix(result, "[") {
+		return result
 	}
 
-	return result, nil
+	// Try to extract a JSON object
+	if start := strings.Index(result, "{"); start >= 0 {
+		if end := strings.LastIndex(result, "}"); end > start {
+			return result[start : end+1]
+		}
+	}
+
+	// Try to extract a JSON array
+	if start := strings.Index(result, "["); start >= 0 {
+		if end := strings.LastIndex(result, "]"); end > start {
+			return result[start : end+1]
+		}
+	}
+
+	return result
 }
 
 // ParseRestaurantHtmlMenu sends HTML content to OpenAI to extract menu information
-func ParseRestaurantHtmlMenu(htmlContent string) ([]byte, error) {
+func ParseRestaurantHtmlMenu(htmlContent string) (*DailyMenu, error) {
 	prompt := `Parse the following HTML extracted from a restaurant's weekly menu page. The text is in German.
 Be aware that a day may be empty due to a holiday or other reason. Important: The week starts on Monday and so does the menu.
 Return a JSON structure where the key is the day of the week in English  and the value is an array of menu options
@@ -139,7 +142,7 @@ for that day. Each menu option should have these keys:
 - description: A description of the dish
 - type: The type of dish (vegetarian, meat, etc.)
 - icon: One of the icons in the list below that fits the dish best. The list is comma-separated in the format: icon-name (optional hints).
-        Use the menu item name first and the description second to determine the best suited icon. 
+        Use the menu item name first and the description second to determine the best suited icon.
 		Very important: must be an exact match of the icon-name. Do not invent any new names or abbreviations.
 - link: A link to the dish on the restaurant's website
 List of icons: ` + strings.Join(IconsList, ", ") + `
@@ -153,40 +156,25 @@ Here is the extracted HTML of the menu:
 		return nil, fmt.Errorf("failed to parse menu: %w", err)
 	}
 
-	// Validate the JSON
-	cleanedJSON, err := validateJSON(result)
-	if err != nil {
-		return nil, err
-	}
+	cleanedJSON := extractJSON(result)
 
-	// Parse the days of the week structure
 	var dailyMenu map[string][]MenuItem
 	if err := json.Unmarshal([]byte(cleanedJSON), &dailyMenu); err != nil {
 		return nil, fmt.Errorf("failed to parse menu JSON: %w", err)
 	}
 
-	finalMenu := DailyMenu{
-		Type: "daily",
-		Menu: dailyMenu,
-	}
-
-	finalJSON, err := json.Marshal(finalMenu)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal final menu: %w", err)
-	}
-
-	return finalJSON, nil
+	return &DailyMenu{Type: "daily", Menu: dailyMenu}, nil
 }
 
 // ParseRestaurantPdfMenu sends extracted text from a PDF to OpenAI to extract menu information
-func ParseRestaurantPdfMenu(extractedText string, restaurantName string, pdfURL string) ([]byte, error) {
+func ParseRestaurantPdfMenu(extractedText string, restaurantName string, pdfURL string) (*WeeklyMenu, error) {
 	prompt := `Parse the following extracted text from a restaurant's menu PDF.
 Return a JSON structure with an array of menu options. Each menu option should have these keys:
 - name: The name of the dish
 - description: A description of the dish
 - type: The type of dish (vegetarian, meat, etc.)
 - icon: One of the icons in the list below that fits the dish best. The list is comma-separated in the format: icon-name (optional hints).
-        Use the menu item name first and the description second to determine the best suited icon. 
+        Use the menu item name first and the description second to determine the best suited icon.
 		Very important: must be an exact match of the icon-name. Do not invent any new names or abbreviations.
 List of icons: ` + strings.Join(IconsList, ", ") + `
 Only include food, ignore drinks. If not specified otherwise, assume Turbolama are vegan bowls.
@@ -200,11 +188,7 @@ Extracted PDF content:
 		return nil, fmt.Errorf("failed to parse PDF menu: %w", err)
 	}
 
-	// First validate and clean the JSON
-	cleanedJSON, err := validateJSON(result)
-	if err != nil {
-		return nil, err
-	}
+	cleanedJSON := extractJSON(result)
 
 	// Try to parse the JSON - it might be in different formats
 	var parsedItems []MenuItem
@@ -236,15 +220,5 @@ Extracted PDF content:
 		parsedItems[i].Link = pdfURL
 	}
 
-	finalMenu := WeeklyMenu{
-		Type: "weekly",
-		Menu: parsedItems,
-	}
-
-	finalJSON, err := json.Marshal(finalMenu)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal final menu: %w", err)
-	}
-
-	return finalJSON, nil
+	return &WeeklyMenu{Type: "weekly", Menu: parsedItems}, nil
 }

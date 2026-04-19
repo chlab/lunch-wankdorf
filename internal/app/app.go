@@ -187,48 +187,15 @@ func processHTMLMenu(restaurant RestaurantMenu, config Config) error {
 
 	// Parse menu using OpenAI
 	log.Println("Parsing menu data with OpenAI...")
-	parsedMenu, err := ai.ParseRestaurantHtmlMenu(menuData)
+	menu, err := ai.ParseRestaurantHtmlMenu(menuData)
 	if err != nil {
-		file.WriteToDebugFile(parsedMenu, "parsed_menu", restaurant.Name, "json")
 		return fmt.Errorf("error parsing menu data: %w", err)
 	}
 
-	// Process the menu to add full URLs to links
-	processedMenu, err := processMenuLinks(parsedMenu, restaurant.BaseURL)
-	if err != nil {
-		log.Printf("Warning: Could not process menu links: %v", err)
-		processedMenu = parsedMenu // Fall back to original parsed menu
-	}
+	// Add base URL to relative links
+	processMenuLinks(menu, restaurant.BaseURL)
 
-	// Format JSON for output
-	var prettyJSON bytes.Buffer
-	if err := json.Indent(&prettyJSON, processedMenu, "", "  "); err != nil {
-		prettyJSON = *bytes.NewBuffer(processedMenu)
-	}
-
-	// Save debug files if debug mode is enabled
-	if config.DebugMode {
-		parsedMenuDebugFile, err := file.WriteToDebugFile(prettyJSON.Bytes(), "parsed_menu", restaurant.Name, "json")
-		if err != nil {
-			log.Printf("Warning: Could not write parsed menu to debug file: %v", err)
-		} else {
-			log.Printf("Saved parsed menu to %s", parsedMenuDebugFile)
-		}
-	}
-
-	// Output the parsed menu
-	fmt.Println(prettyJSON.String())
-
-	// Upload to R2 if enabled
-	if config.UploadToR2 {
-		if err := uploadMenuToR2(processedMenu, restaurant.Name); err != nil {
-			log.Printf("Warning: Failed to upload menu to R2: %v", err)
-		} else {
-			log.Println("Successfully uploaded menu to R2 storage")
-		}
-	}
-
-	return nil
+	return outputAndUpload(menu, restaurant.Name, config)
 }
 
 // processPDFMenu handles PDF-based menus
@@ -297,23 +264,35 @@ func processPDFMenu(restaurant RestaurantMenu, config Config) error {
 
 	// Parse PDF menu using OpenAI
 	log.Println("Parsing PDF menu data with OpenAI...")
-	parsedMenu, err := ai.ParseRestaurantPdfMenu(pdfText, restaurant.Name, pdfURL)
+	menu, err := ai.ParseRestaurantPdfMenu(pdfText, restaurant.Name, pdfURL)
 	if err != nil {
-		if config.DebugMode {
-			file.WriteToDebugFile(parsedMenu, "parsed_menu", restaurant.Name, "json")
-		}
 		return fmt.Errorf("error parsing PDF menu data: %w", err)
 	}
 
-	// Format JSON for output
-	var prettyJSON bytes.Buffer
-	if err := json.Indent(&prettyJSON, parsedMenu, "", "  "); err != nil {
-		prettyJSON = *bytes.NewBuffer(parsedMenu)
+	return outputAndUpload(menu, restaurant.Name, config)
+}
+
+// processMenuLinks adds the restaurant's base URL to relative links in the menu
+func processMenuLinks(menu *ai.DailyMenu, baseURL string) {
+	for day, items := range menu.Menu {
+		for i, item := range items {
+			if item.Link != "" && strings.HasPrefix(item.Link, "/") {
+				menu.Menu[day][i].Link = baseURL + item.Link
+			}
+		}
+	}
+}
+
+// outputAndUpload marshals the menu once, then writes debug files, prints output,
+// and uploads to R2 as needed.
+func outputAndUpload(menu any, restaurantName string, config Config) error {
+	menuJSON, err := json.MarshalIndent(menu, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal menu: %w", err)
 	}
 
-	// Save debug files if debug mode is enabled
 	if config.DebugMode {
-		parsedMenuDebugFile, err := file.WriteToDebugFile(prettyJSON.Bytes(), "parsed_menu", restaurant.Name, "json")
+		parsedMenuDebugFile, err := file.WriteToDebugFile(menuJSON, "parsed_menu", restaurantName, "json")
 		if err != nil {
 			log.Printf("Warning: Could not write parsed menu to debug file: %v", err)
 		} else {
@@ -321,12 +300,10 @@ func processPDFMenu(restaurant RestaurantMenu, config Config) error {
 		}
 	}
 
-	// Output the parsed menu
-	fmt.Println(prettyJSON.String())
+	fmt.Println(string(menuJSON))
 
-	// Upload to R2 if enabled
 	if config.UploadToR2 {
-		if err := uploadMenuToR2(parsedMenu, restaurant.Name); err != nil {
+		if err := uploadMenuToR2(menuJSON, restaurantName); err != nil {
 			log.Printf("Warning: Failed to upload menu to R2: %v", err)
 		} else {
 			log.Println("Successfully uploaded menu to R2 storage")
@@ -334,30 +311,6 @@ func processPDFMenu(restaurant RestaurantMenu, config Config) error {
 	}
 
 	return nil
-}
-
-// processMenuLinks adds the restaurant's base URL to relative links in the menu
-func processMenuLinks(menuJSON []byte, baseURL string) ([]byte, error) {
-	var dailyMenu ai.DailyMenu
-	if err := json.Unmarshal(menuJSON, &dailyMenu); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal menu JSON: %w", err)
-	}
-
-	// Process each day's menu items
-	for day, items := range dailyMenu.Menu {
-		for i, item := range items {
-			if item.Link != "" && strings.HasPrefix(item.Link, "/") {
-				dailyMenu.Menu[day][i].Link = baseURL + item.Link
-			}
-		}
-	}
-
-	processedJSON, err := json.Marshal(dailyMenu)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal processed menu: %w", err)
-	}
-
-	return processedJSON, nil
 }
 
 // loadEnv attempts to load environment variables from a .env file
