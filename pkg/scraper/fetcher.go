@@ -14,7 +14,11 @@ import (
 	"github.com/gocolly/colly/v2"
 )
 
-const userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+const (
+	userAgent          = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+	httpRequestTimeout = 30 * time.Second
+	chromeTimeout      = 60 * time.Second
+)
 
 // MenuData contains the scraped content
 type MenuData struct {
@@ -89,7 +93,7 @@ func FetchPDFMenuURL(url string, menuSelector string) (string, error) {
 	})
 
 	// Set timeout for the request
-	c.SetRequestTimeout(30 * time.Second)
+	c.SetRequestTimeout(httpRequestTimeout)
 
 	// Start scraping
 	err := c.Visit(url)
@@ -171,7 +175,7 @@ func ScrapeEspaceWebsite(url string, debug bool) (*MenuData, error) {
 		}),
 	)
 
-	ctx, cancelTimeout := context.WithTimeout(ctx, 60*time.Second)
+	ctx, cancelTimeout := context.WithTimeout(ctx, chromeTimeout)
 
 	if !debug {
 		defer cancel()

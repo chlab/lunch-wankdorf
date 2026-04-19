@@ -12,9 +12,9 @@ import (
 	"github.com/sashabaranov/go-openai"
 )
 
-// Model constants
 const (
-	ModelGPT4oMini = "gpt-4o-mini"
+	ModelGPT4oMini       = "gpt-4o-mini"
+	completionTimeout    = 3 * time.Minute
 )
 
 // Icons list for menu items
@@ -57,7 +57,7 @@ func CreateCompletion(prompt string) (string, error) {
 	}
 
 	client := openai.NewClient(apiKey)
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), completionTimeout)
 	defer cancel()
 
 	req := openai.ChatCompletionRequest{
