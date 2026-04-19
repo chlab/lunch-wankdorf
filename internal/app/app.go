@@ -151,7 +151,7 @@ func processHTMLMenu(restaurant RestaurantMenu, config Config) {
 	}
 
 	// Extract menu content
-	menuData := ExtractMenuContent(htmlContent.Content)
+	menuData := scraper.OptimizeHTML(htmlContent.Content)
 
 	// Save debug files if debug mode is enabled
 	if config.DebugMode {
@@ -366,11 +366,6 @@ func processMenuLinks(menuJSON []byte, baseURL string) ([]byte, error) {
 	}
 
 	return processedJSON, nil
-}
-
-// ExtractMenuContent extracts menu-specific content from HTML
-func ExtractMenuContent(html string) string {
-	return scraper.OptimizeHTML(html)
 }
 
 // loadEnv attempts to load environment variables from a .env file
