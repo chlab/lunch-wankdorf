@@ -55,8 +55,8 @@ var restaurantMenus = map[string]RestaurantMenu{
 	},
 	"espace": {
 		Name:             "Espace",
-		URL:              "https://web.sv-restaurant.ch/menu/Post,%20Restaurant%20Espace,%20Bern/Mittagsmen%C3%BC",
-		BaseURL:          "https://web.sv-restaurant.ch/menu/Post,%20Restaurant%20Espace,%20Bern/Mittagsmen%C3%BC",
+		URL:              "https://sv-gastronomie.ch/menu/Post,%20Restaurant%20Espace,%20Bern/Mittagsmen%C3%BC",
+		BaseURL:          "https://sv-gastronomie.ch/menu/Post,%20Restaurant%20Espace,%20Bern/Mittagsmen%C3%BC",
 		HasCustomScraper: true,
 		MenuType:         "html",
 	},
