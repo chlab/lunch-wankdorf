@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	ModelGPT4oMini       = "gpt-4o-mini"
-	completionTimeout    = 3 * time.Minute
+	ModelGPT41Mini    = "gpt-4.1-mini"
+	completionTimeout = 3 * time.Minute
 )
 
 // MenuItem represents a single dish on a restaurant menu.
@@ -39,7 +39,8 @@ type WeeklyMenu struct {
 	Menu []MenuItem `json:"menu"`
 }
 
-// Icons list for menu items
+// IconsList describes each icon plus an optional disambiguation hint, for use
+// in the prompt. The schema enum uses just the bare icon names (see iconNames).
 var IconsList = []string{
 	"bento",
 	"curry (only curries)",
@@ -71,8 +72,73 @@ var IconsList = []string{
 	"wrap",
 }
 
-// CreateCompletion sends a prompt to the OpenAI API and returns the response
-func CreateCompletion(prompt string) (string, error) {
+var weekdays = []string{"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"}
+
+func iconNames() []string {
+	out := make([]string, len(IconsList))
+	for i, item := range IconsList {
+		if idx := strings.Index(item, " ("); idx > 0 {
+			out[i] = item[:idx]
+		} else {
+			out[i] = item
+		}
+	}
+	return out
+}
+
+func menuItemSchema(includeLink bool) map[string]any {
+	properties := map[string]any{
+		"name":        map[string]any{"type": "string"},
+		"description": map[string]any{"type": "string"},
+		"type":        map[string]any{"type": "string"},
+		"icon":        map[string]any{"type": "string", "enum": iconNames()},
+	}
+	required := []string{"name", "description", "type", "icon"}
+	if includeLink {
+		properties["link"] = map[string]any{"type": "string"}
+		required = append(required, "link")
+	}
+	return map[string]any{
+		"type":                 "object",
+		"properties":           properties,
+		"required":             required,
+		"additionalProperties": false,
+	}
+}
+
+func htmlMenuSchema() json.RawMessage {
+	item := menuItemSchema(true)
+	properties := make(map[string]any, len(weekdays))
+	for _, d := range weekdays {
+		properties[d] = map[string]any{"type": "array", "items": item}
+	}
+	schema := map[string]any{
+		"type":                 "object",
+		"properties":           properties,
+		"required":             weekdays,
+		"additionalProperties": false,
+	}
+	b, _ := json.Marshal(schema)
+	return b
+}
+
+func pdfMenuSchema() json.RawMessage {
+	schema := map[string]any{
+		"type": "object",
+		"properties": map[string]any{
+			"items": map[string]any{
+				"type":  "array",
+				"items": menuItemSchema(false),
+			},
+		},
+		"required":             []string{"items"},
+		"additionalProperties": false,
+	}
+	b, _ := json.Marshal(schema)
+	return b
+}
+
+func createCompletion(prompt string, schema json.RawMessage, schemaName string) (string, error) {
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
 		return "", errors.New("OPENAI_API_KEY environment variable not set")
@@ -83,16 +149,20 @@ func CreateCompletion(prompt string) (string, error) {
 	defer cancel()
 
 	req := openai.ChatCompletionRequest{
-		Model: ModelGPT4oMini,
+		Model: ModelGPT41Mini,
 		Messages: []openai.ChatCompletionMessage{
-			{
-				Role:    openai.ChatMessageRoleUser,
-				Content: prompt,
+			{Role: openai.ChatMessageRoleUser, Content: prompt},
+		},
+		ResponseFormat: &openai.ChatCompletionResponseFormat{
+			Type: openai.ChatCompletionResponseFormatTypeJSONSchema,
+			JSONSchema: &openai.ChatCompletionResponseFormatJSONSchema{
+				Name:   schemaName,
+				Schema: schema,
+				Strict: true,
 			},
 		},
 	}
 
-	// Standard text-only request
 	resp, err := client.CreateChatCompletion(ctx, req)
 	if err != nil {
 		return "", fmt.Errorf("OpenAI API error: %w", err)
@@ -105,120 +175,83 @@ func CreateCompletion(prompt string) (string, error) {
 	return resp.Choices[0].Message.Content, nil
 }
 
-// extractJSON attempts to extract a JSON string from an API response that may
-// be wrapped in markdown code blocks or contain explanatory text.
-func extractJSON(result string) string {
-	result = strings.TrimSpace(result)
-
-	// Already looks like valid JSON
-	if strings.HasPrefix(result, "{") || strings.HasPrefix(result, "[") {
-		return result
-	}
-
-	// Try to extract a JSON object
-	if start := strings.Index(result, "{"); start >= 0 {
-		if end := strings.LastIndex(result, "}"); end > start {
-			return result[start : end+1]
-		}
-	}
-
-	// Try to extract a JSON array
-	if start := strings.Index(result, "["); start >= 0 {
-		if end := strings.LastIndex(result, "]"); end > start {
-			return result[start : end+1]
-		}
-	}
-
-	return result
-}
-
-// ParseRestaurantHtmlMenu sends HTML content to OpenAI to extract menu information
+// ParseRestaurantHtmlMenu sends HTML content to OpenAI to extract menu information.
 func ParseRestaurantHtmlMenu(htmlContent string) (*DailyMenu, error) {
 	prompt := `Parse the following HTML extracted from a restaurant's weekly menu page. The text is in German.
-Be aware that a day may be empty due to a holiday or other reason. Important: The week starts on Monday and so does the menu.
-Return a JSON structure where the key is the day of the week in English  and the value is an array of menu options
-for that day. Each menu option should have these keys:
-- name: The name of the dish
-- description: A description of the dish
-- type: The type of dish (vegetarian, meat, etc.)
-- icon: One of the icons in the list below that fits the dish best. The list is comma-separated in the format: icon-name (optional hints).
-        Use the menu item name first and the description second to determine the best suited icon.
-		Very important: must be an exact match of the icon-name. Do not invent any new names or abbreviations.
-- link: A link to the dish on the restaurant's website
-List of icons: ` + strings.Join(IconsList, ", ") + `
-Format your response as clean, properly formatted JSON only, with no explanations or additional text.
-Remove any double commas or other formatting issues from the description but don't change the content.
-Here is the extracted HTML of the menu:
+The week starts on Monday. A day may have no menu (holiday, closed) — return an empty array for that day.
+For each menu item provide:
+- name: dish name
+- description: dish description (remove double commas and other formatting noise but keep the content)
+- type: dish type (vegetarian, meat, etc.)
+- icon: the icon that best fits the dish — use the name first, description second
+- link: link to the dish on the restaurant's website, or an empty string if none
+Icon hints (the parenthetical is a hint, not part of the icon name): ` + strings.Join(IconsList, ", ") + `
+
+HTML:
 ` + htmlContent
 
-	result, err := CreateCompletion(prompt)
+	result, err := createCompletion(prompt, htmlMenuSchema(), "restaurant_html_menu")
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse menu: %w", err)
 	}
 
-	cleanedJSON := extractJSON(result)
-
-	var dailyMenu map[string][]MenuItem
-	if err := json.Unmarshal([]byte(cleanedJSON), &dailyMenu); err != nil {
+	var parsed struct {
+		Monday    []MenuItem `json:"monday"`
+		Tuesday   []MenuItem `json:"tuesday"`
+		Wednesday []MenuItem `json:"wednesday"`
+		Thursday  []MenuItem `json:"thursday"`
+		Friday    []MenuItem `json:"friday"`
+		Saturday  []MenuItem `json:"saturday"`
+		Sunday    []MenuItem `json:"sunday"`
+	}
+	if err := json.Unmarshal([]byte(result), &parsed); err != nil {
 		return nil, fmt.Errorf("failed to parse menu JSON: %w", err)
 	}
 
-	return &DailyMenu{Type: "daily", Menu: dailyMenu}, nil
+	return &DailyMenu{
+		Type: "daily",
+		Menu: map[string][]MenuItem{
+			"Monday":    parsed.Monday,
+			"Tuesday":   parsed.Tuesday,
+			"Wednesday": parsed.Wednesday,
+			"Thursday":  parsed.Thursday,
+			"Friday":    parsed.Friday,
+			"Saturday":  parsed.Saturday,
+			"Sunday":    parsed.Sunday,
+		},
+	}, nil
 }
 
-// ParseRestaurantPdfMenu sends extracted text from a PDF to OpenAI to extract menu information
+// ParseRestaurantPdfMenu sends extracted text from a PDF to OpenAI to extract menu information.
 func ParseRestaurantPdfMenu(extractedText string, restaurantName string, pdfURL string) (*WeeklyMenu, error) {
 	prompt := `Parse the following extracted text from a restaurant's menu PDF.
-Return a JSON structure with an array of menu options. Each menu option should have these keys:
-- name: The name of the dish
-- description: A description of the dish
-- type: The type of dish (vegetarian, meat, etc.)
-- icon: One of the icons in the list below that fits the dish best. The list is comma-separated in the format: icon-name (optional hints).
-        Use the menu item name first and the description second to determine the best suited icon.
-		Very important: must be an exact match of the icon-name. Do not invent any new names or abbreviations.
-List of icons: ` + strings.Join(IconsList, ", ") + `
+For each menu item provide:
+- name: dish name
+- description: dish description
+- type: dish type (vegetarian, meat, etc.)
+- icon: the icon that best fits the dish — use the name first, description second
+Icon hints (the parenthetical is a hint, not part of the icon name): ` + strings.Join(IconsList, ", ") + `
 Only include food, ignore drinks. If not specified otherwise, assume Turbolama are vegan bowls.
-Format your response as clean, properly formatted JSON only, with no explanations or additional text.
 
 Extracted PDF content:
 ` + extractedText
 
-	result, err := CreateCompletion(prompt)
+	result, err := createCompletion(prompt, pdfMenuSchema(), "restaurant_pdf_menu")
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse PDF menu: %w", err)
 	}
 
-	cleanedJSON := extractJSON(result)
-
-	// Try to parse the JSON - it might be in different formats
-	var parsedItems []MenuItem
-
-	// First try parsing as array of items directly
-	if err := json.Unmarshal([]byte(cleanedJSON), &parsedItems); err != nil {
-		// Try menuItems field
-		var menuItemsObject struct {
-			MenuItems []MenuItem `json:"menuItems"`
-		}
-		if jsonErr := json.Unmarshal([]byte(cleanedJSON), &menuItemsObject); jsonErr == nil && len(menuItemsObject.MenuItems) > 0 {
-			parsedItems = menuItemsObject.MenuItems
-		} else {
-			// Try menuOptions field (what OpenAI seems to be returning)
-			var menuOptionsObject struct {
-				MenuOptions []MenuItem `json:"menuOptions"`
-			}
-			if jsonErr := json.Unmarshal([]byte(cleanedJSON), &menuOptionsObject); jsonErr == nil && len(menuOptionsObject.MenuOptions) > 0 {
-				parsedItems = menuOptionsObject.MenuOptions
-			} else {
-				return nil, fmt.Errorf("failed to parse menu items from JSON: %w", err)
-			}
-		}
+	var parsed struct {
+		Items []MenuItem `json:"items"`
+	}
+	if err := json.Unmarshal([]byte(result), &parsed); err != nil {
+		return nil, fmt.Errorf("failed to parse menu items from JSON: %w", err)
 	}
 
-	// Add restaurant and link fields to each menu item
-	for i := range parsedItems {
-		parsedItems[i].Restaurant = restaurantName
-		parsedItems[i].Link = pdfURL
+	for i := range parsed.Items {
+		parsed.Items[i].Restaurant = restaurantName
+		parsed.Items[i].Link = pdfURL
 	}
 
-	return &WeeklyMenu{Type: "weekly", Menu: parsedItems}, nil
+	return &WeeklyMenu{Type: "weekly", Menu: parsed.Items}, nil
 }
