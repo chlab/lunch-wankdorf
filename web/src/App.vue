@@ -65,7 +65,8 @@ const navigateDay = (delta) => {
 const goToPreviousDay = () => navigateDay(-1);
 const goToNextDay = () => navigateDay(1);
 
-const hasMenuForSelectedDay = computed(() => selectedDay.value in menu.value);
+// A day can be present but empty (restaurants publish gaps), which is still "no menu"
+const hasMenuForSelectedDay = computed(() => (menu.value[selectedDay.value] ?? []).length > 0);
 
 const filteredMenuItems = computed(() => {
   let items = menu.value[selectedDay.value] ?? [];
@@ -109,7 +110,10 @@ const groupedMenuItems = computed(() => {
 
   // Main restaurants are shuffled (stable for the day), the rest keeps a fixed order
   return [
-    ...shuffle(names.filter((name) => !isAppended(name)), dateSeed(currentDate.value)).map(toGroup),
+    ...shuffle(
+      names.filter((name) => !isAppended(name)),
+      dateSeed(currentDate.value)
+    ).map(toGroup),
     ...APPENDED_RESTAURANTS.filter((name) => names.includes(name)).map(toGroup),
   ];
 });
@@ -168,7 +172,7 @@ onUnmounted(() => {
       <div v-if="loading" class="space-y-4">
         <Skeleton v-for="i in 2" :key="i" />
       </div>
-      <div v-else-if="error" class="text-center py-8 text-red-500">
+      <div v-else-if="error" class="text-center py-8 text-amber-700">
         {{ error }}
       </div>
       <!-- no menu published for this day -->
@@ -179,8 +183,8 @@ onUnmounted(() => {
       <div v-else-if="filteredMenuItems.length === 0" class="text-center py-8 text-gray-500">
         <p>Keine Menüs für die gewählten Filter.</p>
         <button
-          @click="clearFilters"
           class="mt-3 px-3 py-1 rounded-full bg-gray-300 hover:bg-gray-400 hover:text-white transition-colors cursor-pointer text-xs"
+          @click="clearFilters"
         >
           Filter zurücksetzen
         </button>
@@ -191,16 +195,30 @@ onUnmounted(() => {
         <div v-if="dailyRecommendation" class="mb-6">
           <div class="flex items-center justify-between mb-3 max-w-md mx-auto">
             <h2 class="text-lg font-semibold text-gray-700">Tagesempfehlung</h2>
-            <ViewToggle v-model:compactView="compactView" />
+            <ViewToggle v-model:compact-view="compactView" />
           </div>
-          <div :class="compactView ? 'max-w-md mx-auto rounded-lg shadow-md overflow-hidden bg-white p-4' : ''">
+          <div
+            :class="
+              compactView
+                ? 'max-w-md mx-auto rounded-lg shadow-md overflow-hidden bg-white p-4'
+                : ''
+            "
+          >
             <MenuItem :item="dailyRecommendation" :compact="compactView" show-restaurant />
           </div>
         </div>
 
         <div v-for="group in groupedMenuItems" :key="group.restaurant">
-          <h2 class="text-lg font-semibold text-gray-700 mb-3 max-w-md mx-auto">{{ group.restaurant }}</h2>
-          <div :class="compactView ? 'max-w-md mx-auto rounded-lg shadow-md overflow-hidden bg-white p-4' : 'space-y-4'">
+          <h2 class="text-lg font-semibold text-gray-700 mb-3 max-w-md mx-auto">
+            {{ group.restaurant }}
+          </h2>
+          <div
+            :class="
+              compactView
+                ? 'max-w-md mx-auto rounded-lg shadow-md overflow-hidden bg-white p-4'
+                : 'space-y-4'
+            "
+          >
             <MenuItem
               v-for="(item, index) in group.items"
               :key="index"
@@ -221,7 +239,11 @@ onUnmounted(() => {
           class="inline-flex items-center hover:text-gray-900 transition"
         >
           <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd" />
+            <path
+              fill-rule="evenodd"
+              d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+              clip-rule="evenodd"
+            />
           </svg>
           <span>View on GitHub</span>
         </a>
