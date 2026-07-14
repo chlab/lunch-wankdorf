@@ -36,6 +36,17 @@ type MenuItem struct {
 	Icon        string `json:"icon"`
 	Link        string `json:"link,omitempty"`
 	Restaurant  string `json:"restaurant,omitempty"`
+
+	// Category is the heading the dish is listed under ("Pizza Del Giorno",
+	// "Chefs Choice"). It is what a photo is matched to, so it is filled by the
+	// model, copied verbatim from the page.
+	Category string `json:"category,omitempty"`
+
+	// Photo is a thumbnail-sized dish photo and PhotoLarge the version the
+	// frontend opens in the lightbox. Both are filled in by us, never by the
+	// model, and are empty when the restaurant has no photo for the dish.
+	Photo      string `json:"photo,omitempty"`
+	PhotoLarge string `json:"photoLarge,omitempty"`
 }
 
 // DailyMenu wraps a per-day menu (HTML restaurants).
@@ -95,6 +106,8 @@ func iconNames() []string {
 	return out
 }
 
+// menuItemSchema describes one dish. Day menus (HTML) also carry the dish's link
+// and the category heading it sits under; PDF menus have neither.
 func menuItemSchema(includeLink bool) map[string]any {
 	properties := map[string]any{
 		"name":        map[string]any{"type": "string"},
@@ -105,7 +118,8 @@ func menuItemSchema(includeLink bool) map[string]any {
 	required := []string{"name", "description", "type", "icon"}
 	if includeLink {
 		properties["link"] = map[string]any{"type": "string"}
-		required = append(required, "link")
+		properties["category"] = map[string]any{"type": "string"}
+		required = append(required, "link", "category")
 	}
 	return map[string]any{
 		"type":                 "object",
@@ -185,6 +199,9 @@ For each menu item provide:
 - type: dish type (vegetarian, meat, etc.)
 - icon: the icon that best fits the dish — use the name first, description second
 - link: link to the dish on the restaurant's website, or an empty string if none
+- category: the heading the dish is listed under ("Pizza Del Giorno", "Chefs Choice"),
+  copied verbatim. We match the restaurant's dish photos on it, so do not translate,
+  reword or tidy it up. Use an empty string if the dish has no heading.
 Icon hints (the parenthetical is a hint, not part of the icon name): ` + strings.Join(IconsList, ", ") + `
 
 HTML:

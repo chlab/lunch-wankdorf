@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -211,6 +212,11 @@ func processHTMLMenu(restaurant RestaurantMenu, config Config) error {
 
 	// Add base URL to relative links
 	processMenuLinks(menu, restaurant.BaseURL)
+
+	// Dish photos, where the restaurant has them. Espace only publishes a day's
+	// photos on the morning of that day, so the rest of its week is filled in later
+	// by the photo job (see RunPhotoUpdate).
+	addPhotos(menu, days)
 
 	return outputAndUpload(menu, restaurant.Name, config)
 }
@@ -468,44 +474,78 @@ func loadEnv() {
 	log.Println("No .env file found, using environment variables if set")
 }
 
-// uploadMenuToR2 uploads the menu JSON to Cloudflare R2 storage
-func uploadMenuToR2(menuJSON []byte, restaurantName string) error {
-	// Check for required environment variables
+// menuBucket talks to the R2 bucket the menus are published to.
+type menuBucket struct {
+	client *s3.Client
+	name   string
+}
+
+func openMenuBucket() (*menuBucket, error) {
 	accountID := os.Getenv("CLOUDFLARE_ACCOUNT_ID")
 	accessKeyID := os.Getenv("CLOUDFLARE_ACCESS_KEY_ID")
 	secretAccessKey := os.Getenv("CLOUDFLARE_SECRET_ACCESS_KEY")
 	bucketName := os.Getenv("CLOUDFLARE_BUCKET_NAME")
 
 	if accountID == "" || accessKeyID == "" || secretAccessKey == "" || bucketName == "" {
-		return fmt.Errorf("missing required Cloudflare R2 credentials in environment variables")
+		return nil, fmt.Errorf("missing required Cloudflare R2 credentials in environment variables")
 	}
 
-	// Create an S3 client configured for Cloudflare R2
 	endpoint := fmt.Sprintf("https://%s.eu.r2.cloudflarestorage.com", accountID)
-	svc := s3.New(s3.Options{
+	client := s3.New(s3.Options{
 		BaseEndpoint: aws.String(endpoint),
 		Region:       "auto",
 		Credentials:  credentials.NewStaticCredentialsProvider(accessKeyID, secretAccessKey, ""),
 		UsePathStyle: true,
 	})
 
-	// Generate a filename with the restaurant name and current week number
-	// Format: <restaurantname>_<weeknumber>_<year>.json
-	year, week := time.Now().ISOWeek()
-	lowercaseRestaurantName := strings.ToLower(restaurantName)
-	filename := fmt.Sprintf("%s_%d_%d.json", lowercaseRestaurantName, week, year)
+	return &menuBucket{client: client, name: bucketName}, nil
+}
 
-	// Upload the file to R2
+// menuFilename is <restaurantname>_<weeknumber>_<year>.json, for the current ISO
+// week. The frontend builds the same name to fetch it.
+func menuFilename(restaurantName string) string {
+	year, week := time.Now().ISOWeek()
+	return fmt.Sprintf("%s_%d_%d.json", strings.ToLower(restaurantName), week, year)
+}
+
+func (b *menuBucket) get(restaurantName string) ([]byte, error) {
+	filename := menuFilename(restaurantName)
+	out, err := b.client.GetObject(context.Background(), &s3.GetObjectInput{
+		Bucket: aws.String(b.name),
+		Key:    aws.String(filename),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to download %s from R2: %w", filename, err)
+	}
+	defer out.Body.Close()
+
+	menuJSON, err := io.ReadAll(out.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read %s: %w", filename, err)
+	}
+	return menuJSON, nil
+}
+
+func (b *menuBucket) put(restaurantName string, menuJSON []byte) error {
+	filename := menuFilename(restaurantName)
 	contentType := "application/json"
-	_, err := svc.PutObject(context.Background(), &s3.PutObjectInput{
-		Bucket:      aws.String(bucketName),
+	_, err := b.client.PutObject(context.Background(), &s3.PutObjectInput{
+		Bucket:      aws.String(b.name),
 		Key:         aws.String(filename),
 		Body:        bytes.NewReader(menuJSON),
 		ContentType: &contentType,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to upload file to R2: %w", err)
+		return fmt.Errorf("failed to upload %s to R2: %w", filename, err)
 	}
-
 	return nil
+}
+
+// uploadMenuToR2 uploads the menu JSON to Cloudflare R2 storage
+func uploadMenuToR2(menuJSON []byte, restaurantName string) error {
+	bucket, err := openMenuBucket()
+	if err != nil {
+		return err
+	}
+	return bucket.put(restaurantName, menuJSON)
 }

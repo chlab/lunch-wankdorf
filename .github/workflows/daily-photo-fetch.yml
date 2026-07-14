@@ -1,0 +1,50 @@
+name: Daily Photo Fetch
+
+# Espace only publishes a day's dish photos on the morning of that day (they show
+# up between 07:20 and 07:50 local), so the Monday menu run cannot pick up the rest
+# of the week. This adds them as they appear, without re-parsing the menu.
+on:
+  schedule:
+    - cron: '13 7 * * 1-5'  # after the photos are up, in winter and summer time alike
+  workflow_dispatch:
+
+jobs:
+  fetch-photos:
+    name: Fetch photos for espace
+    runs-on: ubuntu-latest
+
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_ACCESS_KEY_ID }}
+      CLOUDFLARE_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_SECRET_ACCESS_KEY }}
+      CLOUDFLARE_BUCKET_NAME: ${{ secrets.CLOUDFLARE_BUCKET_NAME }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Build application
+        run: GOARCH=amd64 GOOS=linux go build -o lunch-app ./cmd/app/main.go
+
+      - name: Run binary inside container with chromedp
+        uses: nick-fields/retry@v4
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 15
+          timeout_minutes: 5
+          command: |
+            docker run --rm --platform linux/amd64 \
+              --entrypoint /app/lunch-app \
+              -v ${{ github.workspace }}/lunch-app:/app/lunch-app \
+              -e CLOUDFLARE_ACCOUNT_ID=${{ secrets.CLOUDFLARE_ACCOUNT_ID }} \
+              -e CLOUDFLARE_ACCESS_KEY_ID=${{ secrets.CLOUDFLARE_ACCESS_KEY_ID }} \
+              -e CLOUDFLARE_SECRET_ACCESS_KEY=${{ secrets.CLOUDFLARE_SECRET_ACCESS_KEY }} \
+              -e CLOUDFLARE_BUCKET_NAME=${{ secrets.CLOUDFLARE_BUCKET_NAME }} \
+              chlab/lunch-wankdorf:latest \
+              -restaurant espace -photos -upload

@@ -267,12 +267,14 @@ func ScrapeEspaceWebsite(pageURL string, debug bool) (*MenuData, error) {
 			Date:   tab.Date,
 			HTML:   capture.HTML,
 			Dishes: capture.Dishes,
+			Photos: capture.Photos,
 		})
 
 		// Kept whole for the debug output; each day is parsed on its own
 		fmt.Fprintf(&allMenus, "<h2>%s (%s)</h2>\n%s\n", day, tab.Date, capture.HTML)
 
-		log.Printf("Scraped %s %s: %d dishes (%d bytes)", day, tab.Date, capture.Dishes, len(capture.HTML))
+		log.Printf("Scraped %s %s: %d dishes, %d photos (%d bytes)",
+			day, tab.Date, capture.Dishes, len(capture.Photos), len(capture.HTML))
 	}
 
 	htmlContent := allMenus.String()
@@ -292,9 +294,11 @@ type menuTab struct {
 }
 
 // dayCapture is one day's menu, with the dish count we check the model against
+// and the dish photos, keyed by the category heading they sit under.
 type dayCapture struct {
-	HTML   string `json:"html"`
-	Dishes int    `json:"dishes"`
+	HTML   string            `json:"html"`
+	Dishes int               `json:"dishes"`
+	Photos map[string]string `json:"photos"`
 }
 
 // The tab links carry the date they serve, e.g. .../Mittagsmenü/date/2026-07-17
@@ -309,6 +313,11 @@ const jsWeekdayTabs = `[...document.querySelectorAll('[mat-tab-link]')]
 // The menu container holds the weekday tab bar as well, which names every day of
 // the week. Handing that to the model alongside a "this is monday" heading is the
 // same ambiguity that made it drop days elsewhere, so the tab bar is cut out.
+//
+// The dish photos are CSS background images rather than <img> tags, and a day
+// whose photos are not published yet serves a placeholder for every dish, which we
+// drop. Photos are keyed by the category heading, the one thing that ties a photo
+// to a dish once the model has rewritten the dish's name.
 const jsCaptureMenu = `(() => {
 	const container = document.querySelector('app-menu-container');
 	if (!container) return null;
@@ -316,14 +325,36 @@ const jsCaptureMenu = `(() => {
 	const clone = container.cloneNode(true);
 	clone.querySelectorAll('nav').forEach((nav) => nav.remove());
 
-	const dishes = [...container.querySelectorAll('app-category')].filter((category) => {
+	const isOnOffer = (category) => {
 		const grid = category.querySelector('app-product-grid');
 		const text = grid ? grid.innerText.replace(/\s+/g, ' ').trim() : '';
 		// a category with nothing on offer renders its product as "."
 		return text !== '' && text !== '.';
-	}).length;
+	};
 
-	return { html: clone.outerHTML, dishes };
+	const photoOf = (category) => {
+		for (const element of category.querySelectorAll('*')) {
+			const background = getComputedStyle(element).backgroundImage;
+			if (!background || !background.includes('http')) continue;
+
+			const url = background.replace(/^url\(["']?|["']?\)$/g, '');
+			// the photos for a day are only published on the morning of that day
+			if (url.includes('` + espaceFallbackPhoto + `')) return '';
+			return url;
+		}
+		return '';
+	};
+
+	const onOffer = [...container.querySelectorAll('app-category')].filter(isOnOffer);
+
+	const photos = {};
+	onOffer.forEach((category) => {
+		const heading = category.innerText.split('\n')[0].trim();
+		const photo = photoOf(category);
+		if (heading && photo) photos[heading] = photo;
+	});
+
+	return { html: clone.outerHTML, dishes: onOffer.length, photos };
 })()`
 
 // rejectCookies declines the cookie banner, tolerating its absence.

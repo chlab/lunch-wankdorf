@@ -17,6 +17,11 @@ type DayMenu struct {
 	Date   string // ISO date, e.g. "2026-07-17"
 	HTML   string
 	Dishes int
+
+	// Photos maps a category heading ("Chefs Choice") to the restaurant's photo for
+	// that day's dish. Only set by scrapers whose page carries photos (Espace);
+	// food2050's photos live on the dish pages and are fetched from the dish links.
+	Photos map[string]string
 }
 
 // Dish links end in the date the dish is served on, e.g.
