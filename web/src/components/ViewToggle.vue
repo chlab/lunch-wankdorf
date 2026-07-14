@@ -11,6 +11,7 @@ const compactView = defineModel('compactView', { type: Boolean, default: false }
       title="Kartenansicht"
       @click="compactView = false"
     >
+      <!-- The card view is the one that shows the dish photos -->
       <svg
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
@@ -23,7 +24,7 @@ const compactView = defineModel('compactView', { type: Boolean, default: false }
         <path
           stroke-linecap="round"
           stroke-linejoin="round"
-          d="M5.25 3A2.25 2.25 0 0 0 3 5.25v13.5A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V5.25A2.25 2.25 0 0 0 18.75 3H5.25Z"
+          d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"
         />
       </svg>
     </button>
