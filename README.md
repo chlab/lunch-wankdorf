@@ -5,20 +5,6 @@ The result is published as a [little web app](https://chlab.github.io/lunch-wank
 
 The project was hacked together in two evenings of vibe-coding, so don't judge my code too harshly.
 
-## Todo
-
-- [x] Add support for Post Espace restaurant. This one is bit trickier since it's an Angular app and Colly doesn't render JS. Also, each day is a different route, so the renderer would actually need to click around on the page.
-- [x] Run the scraper in a nightly GitHub Action
-- [ ] Gzip the menus before uploading them to R2
-- [x] Add all known foodtrucks in the frontend
-- [x] Add Turbo Lama and maybe Freibank
-- [x] Maybe generate icons for each menu item
-- [x] Change the JSON structure of the menus to allow for daily and weekly menus
-- [ ] Consider adding the restaurant name to the menu instead of adding it in the frontend
-- [ ] Add food_type field (healthy, fast food, streetfood, etc.)
-- [x] Strip quotes from the menu titles, also correct turbolama titles to capitalized instead of all caps
-- [ ] Fix the menu links by adding a base URL to the restaurants
-
 ## Project Structure
 
 This project follows the [Standard Go Project Layout](https://github.com/golang-standards/project-layout).
