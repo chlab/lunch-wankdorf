@@ -13,9 +13,20 @@ import (
 )
 
 const (
-	ModelGPT41Mini    = "gpt-4.1-mini"
+	// gpt-4.1-mini used to lose about a fifth of the dishes it was given, even one
+	// day at a time. gpt-5.4-mini returned every dish on every run of the same
+	// input, and did it faster. See the model notes in the README.
+	DefaultModel      = "gpt-5.4-mini"
 	completionTimeout = 3 * time.Minute
 )
+
+// Model returns the model to parse menus with, overridable via OPENAI_MODEL.
+func Model() string {
+	if model := os.Getenv("OPENAI_MODEL"); model != "" {
+		return model
+	}
+	return DefaultModel
+}
 
 // MenuItem represents a single dish on a restaurant menu.
 type MenuItem struct {
@@ -131,7 +142,7 @@ func createCompletion(prompt string, schema json.RawMessage, schemaName string) 
 	defer cancel()
 
 	req := openai.ChatCompletionRequest{
-		Model: ModelGPT41Mini,
+		Model: Model(),
 		Messages: []openai.ChatCompletionMessage{
 			{Role: openai.ChatMessageRoleUser, Content: prompt},
 		},
