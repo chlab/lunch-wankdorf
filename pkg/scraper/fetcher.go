@@ -188,6 +188,11 @@ func scrapeEspace(pageURL, onlyDate string, debug bool) (*MenuData, error) {
 		chromedp.DisableGPU,
 		chromedp.WindowSize(1280, 800),
 		chromedp.NoSandbox,
+		// Chrome puts its shared memory in /dev/shm, which Docker caps at 64MB. Loading
+		// a day used to hang the renderer outright there - not slowly, but past any
+		// timeout, unresponsive even to an evaluate - which is why this scrape worked
+		// on a laptop and never in CI. Keeping that memory in /tmp lifts the cap.
+		chromedp.Flag("disable-dev-shm-usage", true),
 	}
 
 	// Don't run in headless mode if debug mode is enabled
