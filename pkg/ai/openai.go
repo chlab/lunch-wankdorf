@@ -72,8 +72,6 @@ var IconsList = []string{
 	"wrap",
 }
 
-var weekdays = []string{"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"}
-
 func iconNames() []string {
 	out := make([]string, len(IconsList))
 	for i, item := range IconsList {
@@ -106,29 +104,13 @@ func menuItemSchema(includeLink bool) map[string]any {
 	}
 }
 
-func htmlMenuSchema() json.RawMessage {
-	item := menuItemSchema(true)
-	properties := make(map[string]any, len(weekdays))
-	for _, d := range weekdays {
-		properties[d] = map[string]any{"type": "array", "items": item}
-	}
-	schema := map[string]any{
-		"type":                 "object",
-		"properties":           properties,
-		"required":             weekdays,
-		"additionalProperties": false,
-	}
-	b, _ := json.Marshal(schema)
-	return b
-}
-
-func pdfMenuSchema() json.RawMessage {
+func itemsSchema(includeLink bool) json.RawMessage {
 	schema := map[string]any{
 		"type": "object",
 		"properties": map[string]any{
 			"items": map[string]any{
 				"type":  "array",
-				"items": menuItemSchema(false),
+				"items": menuItemSchema(includeLink),
 			},
 		},
 		"required":             []string{"items"},
@@ -175,12 +157,17 @@ func createCompletion(prompt string, schema json.RawMessage, schemaName string) 
 	return resp.Choices[0].Message.Content, nil
 }
 
-// ParseRestaurantHtmlMenu sends HTML content to OpenAI to extract menu information.
-func ParseRestaurantHtmlMenu(htmlContent string) (*DailyMenu, error) {
-	prompt := `Parse the following HTML extracted from a restaurant's weekly menu page. The text is in German.
-The week starts on Monday. A day may have no menu (holiday, closed) — return an empty array for that day.
-Dishes are listed under a heading naming the day they are served on. Put every dish under
-that day, and return every dish you are given — do not skip or summarize the later days.
+// ParseDayMenu sends a single day's HTML to OpenAI to extract that day's dishes.
+//
+// One call per day, rather than one call for the whole week: the model reliably
+// lost interest towards the end of a week-long document and returned the last days
+// empty. A day is small enough to parse in full, the day itself is never in doubt,
+// and a day that does come back short can be retried on its own.
+func ParseDayMenu(day string, dayHTML string) ([]MenuItem, error) {
+	prompt := `Parse the following HTML extracted from a restaurant's menu page. The text is in German.
+It contains the dishes for a single day (` + day + `). Return every dish on offer that day.
+A category with no dish (its content is just ".") is closed — skip it, do not invent a dish for it.
+Ignore prices, allergen information and climate labels.
 For each menu item provide:
 - name: dish name
 - description: dish description (remove double commas and other formatting noise but keep the content)
@@ -190,38 +177,21 @@ For each menu item provide:
 Icon hints (the parenthetical is a hint, not part of the icon name): ` + strings.Join(IconsList, ", ") + `
 
 HTML:
-` + htmlContent
+` + dayHTML
 
-	result, err := createCompletion(prompt, htmlMenuSchema(), "restaurant_html_menu")
+	result, err := createCompletion(prompt, itemsSchema(true), "restaurant_day_menu")
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse menu: %w", err)
+		return nil, fmt.Errorf("failed to parse the %s menu: %w", day, err)
 	}
 
 	var parsed struct {
-		Monday    []MenuItem `json:"monday"`
-		Tuesday   []MenuItem `json:"tuesday"`
-		Wednesday []MenuItem `json:"wednesday"`
-		Thursday  []MenuItem `json:"thursday"`
-		Friday    []MenuItem `json:"friday"`
-		Saturday  []MenuItem `json:"saturday"`
-		Sunday    []MenuItem `json:"sunday"`
+		Items []MenuItem `json:"items"`
 	}
 	if err := json.Unmarshal([]byte(result), &parsed); err != nil {
-		return nil, fmt.Errorf("failed to parse menu JSON: %w", err)
+		return nil, fmt.Errorf("failed to parse the %s menu JSON: %w", day, err)
 	}
 
-	return &DailyMenu{
-		Type: "daily",
-		Menu: map[string][]MenuItem{
-			"Monday":    parsed.Monday,
-			"Tuesday":   parsed.Tuesday,
-			"Wednesday": parsed.Wednesday,
-			"Thursday":  parsed.Thursday,
-			"Friday":    parsed.Friday,
-			"Saturday":  parsed.Saturday,
-			"Sunday":    parsed.Sunday,
-		},
-	}, nil
+	return parsed.Items, nil
 }
 
 // ParseRestaurantPdfMenu sends extracted text from a PDF to OpenAI to extract menu information.
@@ -238,7 +208,7 @@ Only include food, ignore drinks. If not specified otherwise, assume Turbolama a
 Extracted PDF content:
 ` + extractedText
 
-	result, err := createCompletion(prompt, pdfMenuSchema(), "restaurant_pdf_menu")
+	result, err := createCompletion(prompt, itemsSchema(false), "restaurant_pdf_menu")
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse PDF menu: %w", err)
 	}

@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	neturl "net/url"
 	"os"
 	"os/signal"
 	"strings"
@@ -20,12 +21,18 @@ import (
 const (
 	userAgent          = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
 	httpRequestTimeout = 30 * time.Second
-	chromeTimeout      = 60 * time.Second
+	chromeTimeout      = 2 * time.Minute
+	cookieClickTimeout = 5 * time.Second
+	daySwitchTimeout   = 15 * time.Second
 )
 
 // MenuData contains the scraped content
 type MenuData struct {
 	Content string
+	// Days holds the menu split into one section per weekday, for scrapers that can
+	// do the split themselves. Nil when the content still has to be split (see
+	// GroupMenuByDay).
+	Days []DayMenu
 }
 
 // ScrapeMenuContent retrieves only the relevant menu content from the URL
@@ -145,9 +152,10 @@ func DownloadPDF(pdfURL, outputPath string) error {
 	return nil
 }
 
-// ScrapeEspaceWebsite is a custom scraper for the SV Espace restaurant website
-// It navigates through all weekday tabs and combines the menus into a single HTML content
-func ScrapeEspaceWebsite(url string, debug bool) (*MenuData, error) {
+// ScrapeEspaceWebsite is a custom scraper for the SV Espace restaurant website.
+// It loads each weekday by its own dated URL and combines the menus into a single
+// HTML document with one labelled section per day.
+func ScrapeEspaceWebsite(pageURL string, debug bool) (*MenuData, error) {
 	opts := []chromedp.ExecAllocatorOption{
 		chromedp.NoFirstRun,
 		chromedp.NoDefaultBrowserCheck,
@@ -186,26 +194,14 @@ func ScrapeEspaceWebsite(url string, debug bool) (*MenuData, error) {
 	}
 	defer cancelTimeout()
 
-	// Combined menu content from all weekdays
-	var allMenus strings.Builder
-
 	// Navigate to website and handle initial setup
 	err := chromedp.Run(ctx,
-		chromedp.Navigate(url),
+		chromedp.Navigate(pageURL),
 		// Do not grant any permissions to avoid the geolocation prompt
 		browser.GrantPermissions([]browser.PermissionType{}),
 		// Wait for the weekday navigation to load
 		chromedp.WaitVisible(`[mat-tab-link]`, chromedp.ByQuery),
-		// Decline cookies if the banner appears (ignore if not present)
-		chromedp.ActionFunc(func(ctx context.Context) error {
-			// Try to click the cookie reject button, but don't fail if it's not there
-			err := chromedp.Click(`#cookiescript_reject`, chromedp.ByQuery).Do(ctx)
-			if err != nil {
-				log.Printf("Cookie banner not found or not clickable, continuing: %v", err)
-			}
-			return nil
-		}),
-		chromedp.Sleep(2*time.Second),
+		rejectCookies(),
 	)
 	if err != nil {
 		if debug {
@@ -215,34 +211,70 @@ func ScrapeEspaceWebsite(url string, debug bool) (*MenuData, error) {
 		return nil, fmt.Errorf("failed to setup page: %w", err)
 	}
 
-	// Loop through each weekday (Monday to Friday)
-	weekdays := []string{"Monday", "Tuesday", "Wednesday", "Thursday", "Friday"}
-	for day := 1; day <= 5; day++ {
-		var dayMenu string
-		dayName := weekdays[day-1]
+	// Each weekday tab links to its own dated URL, so the day never has to be
+	// inferred from the tab's position.
+	var tabs []menuTab
+	if err := chromedp.Run(ctx, chromedp.Evaluate(jsWeekdayTabs, &tabs)); err != nil {
+		return nil, fmt.Errorf("failed to read the weekday tabs: %w", err)
+	}
+	if len(tabs) == 0 {
+		return nil, fmt.Errorf("found no dated weekday tabs, the page markup has probably changed")
+	}
 
-		err := chromedp.Run(ctx,
-			// Click on the tab for the current weekday
-			chromedp.Click(fmt.Sprintf(`[mat-tab-link]:nth-child(%d)`, day), chromedp.ByQuery),
-			chromedp.Sleep(1*time.Second),
-			// Extract the menu HTML
-			chromedp.OuterHTML(`app-menu-container`, &dayMenu),
+	base, err := neturl.Parse(pageURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid menu URL %q: %w", pageURL, err)
+	}
+
+	var allMenus strings.Builder
+	days := make([]DayMenu, 0, len(tabs))
+
+	for _, tab := range tabs {
+		date, err := time.Parse(time.DateOnly, tab.Date)
+		if err != nil {
+			return nil, fmt.Errorf("unexpected tab date %q: %w", tab.Date, err)
+		}
+		day := strings.ToLower(date.Weekday().String())
+
+		href, err := neturl.Parse(tab.Href)
+		if err != nil {
+			return nil, fmt.Errorf("invalid tab link %q: %w", tab.Href, err)
+		}
+		dayURL := base.ResolveReference(href).String()
+
+		// Loading each day by its own URL rebuilds the DOM, so we can never capture
+		// the previous day's dishes because the page had not re-rendered yet.
+		var capture *dayCapture
+		err = chromedp.Run(ctx,
+			chromedp.Navigate(dayURL),
+			chromedp.WaitVisible(`app-category`, chromedp.ByQuery),
+			waitForDay(tab.Date),
+			chromedp.Evaluate(jsCaptureMenu, &capture),
 		)
 		if err != nil {
 			if debug {
-				log.Printf("Error scraping %s menu: %v", dayName, err)
+				log.Printf("Error scraping %s menu: %v", day, err)
 				continue // Try next day in debug mode
 			}
-			return nil, fmt.Errorf("failed to scrape %s menu: %w", dayName, err)
+			return nil, fmt.Errorf("failed to scrape the %s menu: %w", day, err)
+		}
+		if capture == nil {
+			return nil, fmt.Errorf("found no menu on the page for %s", day)
 		}
 
-		// Add day header and append to combined content
-		allMenus.WriteString(fmt.Sprintf("\n<!-- %s Menu -->\n<h2>%s</h2>\n%s\n", dayName, dayName, dayMenu))
+		days = append(days, DayMenu{
+			Day:    day,
+			Date:   tab.Date,
+			HTML:   capture.HTML,
+			Dishes: capture.Dishes,
+		})
 
-		log.Printf("Scraped %s menu (length: %d bytes)", dayName, len(dayMenu))
+		// Kept whole for the debug output; each day is parsed on its own
+		fmt.Fprintf(&allMenus, "<h2>%s (%s)</h2>\n%s\n", day, tab.Date, capture.HTML)
+
+		log.Printf("Scraped %s %s: %d dishes (%d bytes)", day, tab.Date, capture.Dishes, len(capture.HTML))
 	}
 
-	// Get the combined content
 	htmlContent := allMenus.String()
 
 	if debug {
@@ -250,7 +282,92 @@ func ScrapeEspaceWebsite(url string, debug bool) (*MenuData, error) {
 		waitForInterrupt()
 	}
 
-	return &MenuData{Content: htmlContent}, nil
+	return &MenuData{Content: htmlContent, Days: days}, nil
+}
+
+// menuTab is a weekday tab on the SV menu page, e.g. "Fri. 17.07."
+type menuTab struct {
+	Href string `json:"href"`
+	Date string `json:"date"`
+}
+
+// dayCapture is one day's menu, with the dish count we check the model against
+type dayCapture struct {
+	HTML   string `json:"html"`
+	Dishes int    `json:"dishes"`
+}
+
+// The tab links carry the date they serve, e.g. .../Mittagsmenü/date/2026-07-17
+const jsWeekdayTabs = `[...document.querySelectorAll('[mat-tab-link]')]
+	.map((tab) => {
+		const href = tab.getAttribute('href') || '';
+		const date = (href.match(/(\d{4}-\d{2}-\d{2})$/) || [])[1] || '';
+		return { href, date };
+	})
+	.filter((tab) => tab.date)`
+
+// The menu container holds the weekday tab bar as well, which names every day of
+// the week. Handing that to the model alongside a "this is monday" heading is the
+// same ambiguity that made it drop days elsewhere, so the tab bar is cut out.
+const jsCaptureMenu = `(() => {
+	const container = document.querySelector('app-menu-container');
+	if (!container) return null;
+
+	const clone = container.cloneNode(true);
+	clone.querySelectorAll('nav').forEach((nav) => nav.remove());
+
+	const dishes = [...container.querySelectorAll('app-category')].filter((category) => {
+		const grid = category.querySelector('app-product-grid');
+		const text = grid ? grid.innerText.replace(/\s+/g, ' ').trim() : '';
+		// a category with nothing on offer renders its product as "."
+		return text !== '' && text !== '.';
+	}).length;
+
+	return { html: clone.outerHTML, dishes };
+})()`
+
+// rejectCookies declines the cookie banner, tolerating its absence.
+//
+// chromedp.Click polls for the node until its context runs out, so running it on
+// the scrape's own context meant a missing banner burned the entire timeout and
+// left the context dead for every step after it. Giving the click its own short
+// deadline is what actually makes the banner optional.
+func rejectCookies() chromedp.ActionFunc {
+	return func(ctx context.Context) error {
+		clickCtx, cancel := context.WithTimeout(ctx, cookieClickTimeout)
+		defer cancel()
+
+		if err := chromedp.Click(`#cookiescript_reject`, chromedp.ByQuery).Do(clickCtx); err != nil {
+			log.Printf("Cookie banner not found or not clickable, continuing: %v", err)
+		}
+		return nil
+	}
+}
+
+// waitForDay blocks until the page shows the day we asked for, so a slow render
+// can't be mistaken for the menu of the day we requested.
+func waitForDay(date string) chromedp.ActionFunc {
+	return func(ctx context.Context) error {
+		expr := fmt.Sprintf(
+			`!!document.querySelector('[mat-tab-link][aria-selected="true"]')?.getAttribute('href')?.endsWith(%q)`,
+			date)
+
+		deadline := time.Now().Add(daySwitchTimeout)
+		for time.Now().Before(deadline) {
+			var showing bool
+			if err := chromedp.Evaluate(expr, &showing).Do(ctx); err != nil {
+				return err
+			}
+			if showing {
+				return nil
+			}
+			if err := chromedp.Sleep(250 * time.Millisecond).Do(ctx); err != nil {
+				return err
+			}
+		}
+
+		return fmt.Errorf("page never switched to %s", date)
+	}
 }
 
 // waitForInterrupt blocks until an interrupt signal (Ctrl+C) is received,

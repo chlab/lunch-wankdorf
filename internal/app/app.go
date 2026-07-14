@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -153,33 +155,37 @@ func processHTMLMenu(restaurant RestaurantMenu, config Config) error {
 		}
 	}
 
-	// Extract menu content
-	menuData := scraper.OptimizeHTML(htmlContent.Content)
-
-	// Group the dishes by day ourselves where the page doesn't do it for us, so the
-	// model never has to work out which day a dish belongs to. dishesPerDay is nil
-	// for restaurants we can't do this for, which disables the completeness check.
-	var dishesPerDay map[string]int
+	// Split the week into one section per day. Espace's scraper already does this;
+	// the food2050 pages have to be grouped by the date in each dish link.
+	days := htmlContent.Days
 	if restaurant.GroupDishesByDay {
-		grouped, counts, err := scraper.GroupMenuByDay(menuData)
+		grouped, err := scraper.GroupMenuByDay(scraper.OptimizeHTML(htmlContent.Content))
 		if err != nil {
 			return fmt.Errorf("error grouping menu by day: %w", err)
 		}
 
-		// If the page markup changes under us, fall back to the ungrouped content
-		// rather than sending the model nothing at all.
-		if len(counts) == 0 {
-			log.Printf("Warning: found no dated dish links for %s, falling back to ungrouped content", restaurant.Name)
-		} else {
-			log.Printf("Grouped dishes by day: %s", formatCounts(counts))
-			menuData = grouped
-			dishesPerDay = counts
+		// Without the dates we can't tell which day a dish belongs to, and neither can
+		// the model - that is the bug the grouping exists to prevent. Better to fail
+		// loudly than to upload a menu with days silently missing.
+		if len(grouped) == 0 {
+			return fmt.Errorf("found no dated dish links for %s, the page markup has probably changed", restaurant.Name)
 		}
+		days = grouped
 	}
+
+	if len(days) == 0 {
+		return fmt.Errorf("no menu content found on the page")
+	}
+
+	for i := range days {
+		days[i].HTML = scraper.OptimizeHTML(days[i].HTML)
+	}
+
+	log.Printf("Dishes found per day: %s", formatCounts(dishCounts(days)))
 
 	// Save debug files if debug mode is enabled
 	if config.DebugMode {
-		menuContentDebugFile, err := file.WriteToDebugFile([]byte(menuData), "menu_content", restaurant.Name, "html")
+		menuContentDebugFile, err := file.WriteToDebugFile([]byte(joinDays(days)), "menu_content", restaurant.Name, "html")
 		if err != nil {
 			log.Printf("Warning: Could not write menu content to debug file: %v", err)
 		} else {
@@ -187,15 +193,8 @@ func processHTMLMenu(restaurant RestaurantMenu, config Config) error {
 		}
 	}
 
-	contentLength := len(menuData)
-	log.Printf("Successfully extracted menu content (%d bytes)", contentLength)
-
-	if contentLength == 0 {
-		return fmt.Errorf("no menu content found on the page")
-	}
-
 	// Print a sample of the content
-	logPreview(menuData)
+	logPreview(days[0].HTML)
 
 	// Abort menu parsing if dry run is enabled
 	if config.DryRun {
@@ -205,7 +204,7 @@ func processHTMLMenu(restaurant RestaurantMenu, config Config) error {
 
 	// Parse menu using OpenAI
 	log.Println("Parsing menu data with OpenAI...")
-	menu, err := parseMenuWithRetry(menuData, dishesPerDay)
+	menu, err := parseWeek(days)
 	if err != nil {
 		return fmt.Errorf("error parsing menu data: %w", err)
 	}
@@ -216,49 +215,82 @@ func processHTMLMenu(restaurant RestaurantMenu, config Config) error {
 	return outputAndUpload(menu, restaurant.Name, config)
 }
 
-// parseMenuWithRetry parses the menu and checks it against the dishes the page
-// actually offered. The model occasionally returns a day short (this is how Friday
-// used to go missing), and since the whole week is only fetched once a week, it is
-// worth one more attempt before settling for an incomplete menu.
-func parseMenuWithRetry(menuData string, dishesPerDay map[string]int) (*ai.DailyMenu, error) {
+// parseWeek parses every day on its own, in parallel. Days are independent, so a
+// day that comes back short can be retried without redoing the rest of the week.
+func parseWeek(days []scraper.DayMenu) (*ai.DailyMenu, error) {
+	menu := &ai.DailyMenu{
+		Type: "daily",
+		Menu: make(map[string][]ai.MenuItem, len(days)),
+	}
+
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+	errs := make([]error, len(days))
+
+	for i, day := range days {
+		wg.Add(1)
+		go func(i int, day scraper.DayMenu) {
+			defer wg.Done()
+
+			items, err := parseDayWithRetry(day)
+			if err != nil {
+				errs[i] = err
+				return
+			}
+
+			mu.Lock()
+			defer mu.Unlock()
+			menu.Menu[capitalize(day.Day)] = items
+		}(i, day)
+	}
+	wg.Wait()
+
+	return menu, errors.Join(errs...)
+}
+
+// parseDayWithRetry parses one day and checks the result against the dishes the
+// page actually offered, retrying once if the model left something behind.
+func parseDayWithRetry(day scraper.DayMenu) ([]ai.MenuItem, error) {
 	const attempts = 2
 
-	var menu *ai.DailyMenu
+	var items []ai.MenuItem
 	for attempt := 1; attempt <= attempts; attempt++ {
-		parsed, err := ai.ParseRestaurantHtmlMenu(menuData)
+		parsed, err := ai.ParseDayMenu(day.Day, day.HTML)
 		if err != nil {
 			return nil, err
 		}
-		menu = parsed
+		items = parsed
 
-		missing := missingDishes(menu, dishesPerDay)
-		if len(missing) == 0 {
-			return menu, nil
+		if len(items) >= day.Dishes {
+			return items, nil
 		}
 
 		if attempt < attempts {
-			log.Printf("Warning: menu is incomplete (%s), retrying...", formatCounts(missing))
+			log.Printf("Warning: %s came back with %d of %d dishes, retrying...",
+				day.Day, len(items), day.Dishes)
 		} else {
-			log.Printf("Warning: menu is still incomplete after %d attempts (%s), using it anyway",
-				attempts, formatCounts(missing))
+			log.Printf("Warning: %s still has %d of %d dishes after %d attempts, using it anyway",
+				day.Day, len(items), day.Dishes, attempts)
 		}
 	}
 
-	return menu, nil
+	return items, nil
 }
 
-// missingDishes reports how many dishes the model left behind, per day. An empty
-// result means the menu accounts for every dish found on the page.
-func missingDishes(menu *ai.DailyMenu, dishesPerDay map[string]int) map[string]int {
-	missing := make(map[string]int)
-	for day, expected := range dishesPerDay {
-		// dishesPerDay is keyed lowercase, the parsed menu is capitalized
-		parsed := len(menu.Menu[capitalize(day)])
-		if parsed < expected {
-			missing[day] = expected - parsed
-		}
+func dishCounts(days []scraper.DayMenu) map[string]int {
+	counts := make(map[string]int, len(days))
+	for _, day := range days {
+		counts[day.Day] = day.Dishes
 	}
-	return missing
+	return counts
+}
+
+func joinDays(days []scraper.DayMenu) string {
+	var joined strings.Builder
+	for _, day := range days {
+		fmt.Fprintf(&joined, "<h2>%s (%s)</h2>\n%s\n", day.Day, day.Date, day.HTML)
+	}
+	return joined.String()
 }
 
 func capitalize(day string) string {

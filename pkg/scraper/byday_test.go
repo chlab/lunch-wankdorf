@@ -28,71 +28,60 @@ const weeklyGrid = `
 `
 
 func TestGroupMenuByDayAssignsDishesToTheDayInTheirLink(t *testing.T) {
-	grouped, counts, err := GroupMenuByDay(weeklyGrid)
+	days, err := GroupMenuByDay(weeklyGrid)
 	if err != nil {
 		t.Fatalf("GroupMenuByDay() error = %v", err)
 	}
 
+	// Only the days that actually have dishes, in order
+	if got, want := len(days), 2; got != want {
+		t.Fatalf("got %d days, want %d: %+v", got, want, days)
+	}
+
+	monday, friday := days[0], days[1]
+	if monday.Day != "monday" || friday.Day != "friday" {
+		t.Fatalf("days are %q and %q, want monday and friday", monday.Day, friday.Day)
+	}
+
 	// Monday's dishes are repeated by the single-day view but must only count once
-	if got, want := counts["monday"], 2; got != want {
-		t.Errorf("counts[monday] = %d, want %d", got, want)
+	if got, want := monday.Dishes, 2; got != want {
+		t.Errorf("monday.Dishes = %d, want %d (the repeated dish must be de-duplicated)", got, want)
 	}
-	if got, want := counts["friday"], 2; got != want {
-		t.Errorf("counts[friday] = %d, want %d", got, want)
-	}
-	if _, ok := counts["saturday"]; ok {
-		t.Errorf("counts has saturday, want no entry for a day without dishes")
+	if got, want := friday.Dishes, 2; got != want {
+		t.Errorf("friday.Dishes = %d, want %d", got, want)
 	}
 
 	// Each dish has to end up under the day its link points at
-	mondaySection := section(grouped, "<h2>monday")
-	if !strings.Contains(mondaySection, "PASTA SALSICCA") || !strings.Contains(mondaySection, "PIZZA FUNGHI") {
-		t.Errorf("monday section is missing dishes:\n%s", mondaySection)
+	if !strings.Contains(monday.HTML, "PASTA SALSICCA") || !strings.Contains(monday.HTML, "PIZZA FUNGHI") {
+		t.Errorf("monday is missing dishes:\n%s", monday.HTML)
 	}
-	if strings.Contains(mondaySection, "PASTA PESTO") {
-		t.Errorf("monday section contains a friday dish:\n%s", mondaySection)
+	if strings.Contains(monday.HTML, "PASTA PESTO") {
+		t.Errorf("monday contains a friday dish:\n%s", monday.HTML)
 	}
-
-	fridaySection := section(grouped, "<h2>friday")
-	if !strings.Contains(fridaySection, "PASTA PESTO") || !strings.Contains(fridaySection, "PIZZA SICILIANA") {
-		t.Errorf("friday section is missing dishes:\n%s", fridaySection)
+	if !strings.Contains(friday.HTML, "PASTA PESTO") || !strings.Contains(friday.HTML, "PIZZA SICILIANA") {
+		t.Errorf("friday is missing dishes:\n%s", friday.HTML)
 	}
 
 	// The category is the dish name the page shows above the description
-	if !strings.Contains(mondaySection, "<h3>Pasta Del Giorno</h3>") {
-		t.Errorf("monday section is missing the dish category:\n%s", mondaySection)
+	if !strings.Contains(monday.HTML, "<h3>Pasta Del Giorno</h3>") {
+		t.Errorf("monday is missing the dish category:\n%s", monday.HTML)
 	}
 
 	// Links without a date (navigation, footer) are not dishes
-	if strings.Contains(grouped, "Newsletter") {
-		t.Errorf("grouped content contains a non-dish link:\n%s", grouped)
+	if strings.Contains(monday.HTML+friday.HTML, "Newsletter") {
+		t.Error("grouped content contains a non-dish link")
 	}
 }
 
 func TestGroupMenuByDayWithoutDatedLinks(t *testing.T) {
-	grouped, counts, err := GroupMenuByDay(`<div><a href="https://x/newsletter">Newsletter</a></div>`)
+	days, err := GroupMenuByDay(`<div><a href="https://x/newsletter">Newsletter</a></div>`)
 	if err != nil {
 		t.Fatalf("GroupMenuByDay() error = %v", err)
 	}
 
-	// The caller relies on this to fall back to the ungrouped content
-	if len(counts) != 0 {
-		t.Errorf("counts = %v, want empty when the page has no dated dish links", counts)
+	// The caller turns this into a loud failure rather than parsing a menu it can't
+	// attribute to days
+	if len(days) != 0 {
+		t.Errorf("got %+v, want no days when the page has no dated dish links", days)
 	}
-	if grouped != "" {
-		t.Errorf("grouped = %q, want empty", grouped)
-	}
-}
-
-// section returns the part of grouped starting at heading, up to the next heading.
-func section(grouped, heading string) string {
-	start := strings.Index(grouped, heading)
-	if start == -1 {
-		return ""
-	}
-	rest := grouped[start+len(heading):]
-	if end := strings.Index(rest, "<h2>"); end != -1 {
-		return rest[:end]
-	}
-	return rest
 }

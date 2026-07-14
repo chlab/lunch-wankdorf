@@ -10,25 +10,30 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
+// DayMenu is a single weekday's menu, split out so it can be parsed on its own.
+// Dishes is what the page offered, which is what the parsed result is checked against.
+type DayMenu struct {
+	Day    string // lowercase weekday, e.g. "monday"
+	Date   string // ISO date, e.g. "2026-07-17"
+	HTML   string
+	Dishes int
+}
+
 // Dish links end in the date the dish is served on, e.g.
 // .../mittagsverpflegung,hauptspeisen,pizza-del-giorno/2026-07-17
 var reDishDate = regexp.MustCompile(`/(\d{4}-\d{2}-\d{2})$`)
 
-// GroupMenuByDay restructures a food2050 weekly menu page (Gira, Luna, Sole) into
-// explicit per-day sections.
+// GroupMenuByDay splits a food2050 weekly menu page (Gira, Luna, Sole) into one
+// section per day.
 //
 // The page is a transposed grid: dishes are grouped by category ("Pasta Del
 // Giorno") with one link per weekday, and the only thing tying a dish to a day is
 // the date at the end of its link. Asking the model to invert that mapping is what
-// made it silently drop the last days of the week. Grouping the dishes here means
-// the model only has to read dishes out of a labelled section.
-//
-// The returned counts are per lowercase weekday and let the caller check that the
-// model brought back everything the page offered.
-func GroupMenuByDay(htmlContent string) (string, map[string]int, error) {
+// made it silently drop the last days of the week.
+func GroupMenuByDay(htmlContent string) ([]DayMenu, error) {
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(htmlContent))
 	if err != nil {
-		return "", nil, fmt.Errorf("failed to parse menu HTML: %w", err)
+		return nil, fmt.Errorf("failed to parse menu HTML: %w", err)
 	}
 
 	type dish struct {
@@ -69,27 +74,29 @@ func GroupMenuByDay(htmlContent string) (string, map[string]int, error) {
 	}
 	sort.Strings(dates)
 
-	var grouped strings.Builder
-	counts := make(map[string]int, len(dates))
-
+	days := make([]DayMenu, 0, len(dates))
 	for _, date := range dates {
 		parsed, err := time.Parse(time.DateOnly, date)
 		if err != nil {
-			return "", nil, fmt.Errorf("unexpected dish date %q: %w", date, err)
+			return nil, fmt.Errorf("unexpected dish date %q: %w", date, err)
 		}
 
-		day := strings.ToLower(parsed.Weekday().String())
-		counts[day] = len(dishesByDate[date])
-
-		fmt.Fprintf(&grouped, "<h2>%s (%s)</h2>\n", day, date)
+		var section strings.Builder
 		for _, d := range dishesByDate[date] {
-			fmt.Fprintf(&grouped,
+			fmt.Fprintf(&section,
 				"<div><h3>%s</h3><p>%s</p><a href=\"%s\">Details</a></div>\n",
 				d.category, d.description, d.link)
 		}
+
+		days = append(days, DayMenu{
+			Day:    strings.ToLower(parsed.Weekday().String()),
+			Date:   date,
+			HTML:   section.String(),
+			Dishes: len(dishesByDate[date]),
+		})
 	}
 
-	return grouped.String(), counts, nil
+	return days, nil
 }
 
 // categoryOf finds the dish's category heading ("Pizza Del Giorno"). In the weekly
