@@ -71,6 +71,11 @@ const handleVegetarianToggle = (isVegetarian) => {
   vegetarianFilter.value = isVegetarian;
 };
 
+const clearFilters = () => {
+  selectedRestaurant.value = '';
+  vegetarianFilter.value = false;
+};
+
 // Find the menu key for the selected day (case-insensitive)
 const menuDayKey = computed(() => {
   return Object.keys(menu.value).find(
@@ -217,10 +222,24 @@ onUnmounted(() => {
         <Skeleton v-for="i in 2" :key="i" />
       </div>
       <div v-else-if="error" class="text-center py-8 text-red-500">
-        Error loading menu: {{ error }}
+        {{ error }}
+      </div>
+      <!-- no menu published for this day -->
+      <div v-else-if="!hasMenuForSelectedDay" class="text-center py-8 text-gray-500">
+        Für diesen Tag ist kein Menü verfügbar.
+      </div>
+      <!-- everything got filtered away -->
+      <div v-else-if="filteredMenuItems.length === 0" class="text-center py-8 text-gray-500">
+        <p>Keine Menüs für die gewählten Filter.</p>
+        <button
+          @click="clearFilters"
+          class="mt-3 px-3 py-1 rounded-full bg-gray-300 hover:bg-gray-400 hover:text-white transition-colors cursor-pointer text-xs"
+        >
+          Filter zurücksetzen
+        </button>
       </div>
       <!-- menu items list grouped by restaurant -->
-      <div v-else-if="hasMenuForSelectedDay" class="space-y-6">
+      <div v-else class="space-y-6">
         <!-- Daily recommendation -->
         <div v-if="dailyRecommendation" class="mb-6">
           <div class="flex items-center justify-between mb-3 max-w-md mx-auto">
@@ -259,10 +278,6 @@ onUnmounted(() => {
             />
           </div>
         </div>
-      </div>
-      <!-- no items today -->
-      <div v-else class="text-center py-8 text-gray-500">
-        No menu available for today.
       </div>
     </main>
 
