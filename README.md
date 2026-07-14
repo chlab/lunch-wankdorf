@@ -52,14 +52,81 @@ This project follows the [Standard Go Project Layout](https://github.com/golang-
    go run ./cmd/app/main.go -h
    ```
 
+Useful flags: `-restaurant <id>` picks the restaurant, `-dryRun` scrapes without
+calling OpenAI, `-debug` writes the intermediate HTML to `debug/`, and `-upload`
+publishes to R2. A weekly GitHub Action runs the whole set every Monday morning.
+
 The application will:
-1. Scrape the weekly menu from the three SBB restaurants
-   - Uses Colly to extract only the relevant menu HTML content
-2. Send the targeted HTML content to OpenAI for parsing
-3. Parse the structured menu data in JSON format with days of the week and menu options
+1. Scrape the weekly menu for one restaurant
+2. Split the week into one section per day (see below)
+3. Send each day to OpenAI separately and check the result against the dishes the page offered
 4. Upload the structured menu data to a Cloudflare R2 bucket
 
 The frontend app retrieves the structured menu data from the Cloudflare R2 bucket and displays it.
+
+## How the parsing works, and why
+
+The naive version of this — hand OpenAI the whole week and ask for a menu — quietly
+loses dishes, and it always loses them at the *end* of the week. That is where the
+Friday menus kept disappearing to. Two things prevent it, and both are needed:
+
+**Every dish is assigned to a day by us, never by the model.**
+Gira, Luna and Sole (food2050) render the week as a transposed grid: dishes are
+grouped by category ("Pasta Del Giorno") with one link per weekday, and the only
+thing tying a dish to a day is the date at the end of its link. `GroupMenuByDay`
+reads that date and splits the page into days. Espace (SV) is a different site
+entirely — an Angular app where each day is its own dated route — so its scraper
+loads each day by its own URL and waits for the page to actually show that day
+before capturing it.
+
+**Each day is parsed in its own request.**
+A day is small enough for the model to read in full, and the day it belongs to is
+never in question. Days are parsed in parallel, and because we know how many dishes
+the page offered, a day that comes back short is retried on its own. If a page ever
+stops exposing dates, the run fails loudly rather than uploading a menu with days
+silently missing.
+
+This is not a model problem you can buy your way out of: asked to parse a whole
+week in one call, even `gpt-5.4-mini` still drops the tail (Espace lost a Friday
+dish in 3 of 3 runs).
+
+## Choosing a model
+
+`OPENAI_MODEL` overrides the model; the default is in `pkg/ai/openai.go`.
+
+The model is doing extraction, not reasoning, but it still has to *not get bored*.
+Parsing Gira one day at a time — 3 runs of 5 days, counting the returned dishes
+against what the page offered:
+
+| Model | Days complete | Dishes lost | Time |
+|---|---|---|---|
+| gpt-4.1-mini | 9/15 | 18 of 90 | 136s |
+| gpt-4.1 | 15/15 | 0 | 73s |
+| gpt-5-mini | 15/15 | 0 | 206s |
+| **gpt-5.4-mini** (default) | **15/15** | **0** | **54s** |
+| gpt-5.4-nano | 15/15 | 0 | 76s |
+| gpt-5.4 | 15/15 | 0 | 65s |
+
+Cost is irrelevant at this volume: a weekly run is 4 restaurants × 5 days = 20 calls
+of roughly 860 input and 400 output tokens, which is about 5 cents a week on
+gpt-5.4-mini — a couple of euros a year. Pick for reliability, not price.
+
+## Frontend
+
+```bash
+cd web
+npm install
+npm run dev     # the R2 bucket sends no CORS header for localhost, see below
+npm run lint
+npm run format
+```
+
+The bucket can't be read from `localhost`, so `npm run dev` on its own shows the
+error state. Point it at a local copy of the menus to work on the UI:
+
+```bash
+VITE_MENU_BASE_URL=http://localhost:8099 npm run dev
+```
 
 ## Credits
 
