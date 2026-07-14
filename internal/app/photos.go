@@ -197,9 +197,14 @@ func RunPhotoUpdate(config Config) error {
 		return fmt.Errorf("%s publishes its photos on the dish pages, which the weekly run already fetches", restaurant.Name)
 	}
 
-	log.Printf("Looking for new %s photos", restaurant.Name)
+	// Only today's photos can be new: Espace publishes a day's photos on the morning
+	// of that day, and every earlier day of the week was picked up by the run on its
+	// own morning. Asking for the whole week would re-scrape days we already have.
+	today := time.Now().Format(time.DateOnly)
 
-	scraped, err := scraper.ScrapeEspaceWebsite(restaurant.URL, config.DebugMode)
+	log.Printf("Looking for new %s photos for %s", restaurant.Name, today)
+
+	scraped, err := scraper.ScrapeEspaceDay(restaurant.URL, today, config.DebugMode)
 	if err != nil {
 		return fmt.Errorf("error scraping menu data: %w", err)
 	}

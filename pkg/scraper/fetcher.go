@@ -22,8 +22,13 @@ import (
 const (
 	userAgent          = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
 	httpRequestTimeout = 30 * time.Second
-	// Generous: each of Espace's dishes has to be opened to find its link
-	chromeTimeout      = 5 * time.Minute
+	// Generous: each of Espace's dishes has to be opened to find its link. Must stay
+	// under the workflow's step timeout, or the runner kills the scrape before it can
+	// report why it gave up.
+	chromeTimeout = 4 * time.Minute
+	// One day must not be able to spend the whole scrape's budget: without a deadline
+	// of its own, a day whose menu never renders leaves nothing for the days after it.
+	dayScrapeTimeout   = 60 * time.Second
 	cookieClickTimeout = 5 * time.Second
 	daySwitchTimeout   = 15 * time.Second
 )
@@ -158,6 +163,23 @@ func DownloadPDF(pdfURL, outputPath string) error {
 // It loads each weekday by its own dated URL and combines the menus into a single
 // HTML document with one labelled section per day.
 func ScrapeEspaceWebsite(pageURL string, debug bool) (*MenuData, error) {
+	return scrapeEspace(pageURL, "", debug)
+}
+
+// ScrapeEspaceDay scrapes a single weekday, given as a YYYY-MM-DD date. The daily
+// photo run only needs the photos of the day being published, and asking for just
+// that day keeps it off the other days' tabs, which it has no use for.
+//
+// A date the page has no tab for - a holiday, a day outside the published week -
+// yields no days rather than an error: the caller treats an empty scrape as "nothing
+// published yet", which is exactly what it is.
+func ScrapeEspaceDay(pageURL, date string, debug bool) (*MenuData, error) {
+	return scrapeEspace(pageURL, date, debug)
+}
+
+// scrapeEspace scrapes the whole published week, or a single day when onlyDate is
+// set to a YYYY-MM-DD date.
+func scrapeEspace(pageURL, onlyDate string, debug bool) (*MenuData, error) {
 	opts := []chromedp.ExecAllocatorOption{
 		chromedp.NoFirstRun,
 		chromedp.NoDefaultBrowserCheck,
@@ -232,6 +254,10 @@ func ScrapeEspaceWebsite(pageURL string, debug bool) (*MenuData, error) {
 	days := make([]DayMenu, 0, len(tabs))
 
 	for _, tab := range tabs {
+		if onlyDate != "" && tab.Date != onlyDate {
+			continue
+		}
+
 		date, err := time.Parse(time.DateOnly, tab.Date)
 		if err != nil {
 			return nil, fmt.Errorf("unexpected tab date %q: %w", tab.Date, err)
@@ -246,14 +272,22 @@ func ScrapeEspaceWebsite(pageURL string, debug bool) (*MenuData, error) {
 
 		// Loading each day by its own URL rebuilds the DOM, so we can never capture
 		// the previous day's dishes because the page had not re-rendered yet.
+		//
+		// The day gets a deadline of its own: the waits below poll until their context
+		// runs out, so on the scrape's own context a day that never renders would burn
+		// the entire budget and leave nothing for the days behind it. Cancelling only
+		// the day's context leaves the browser alive for them.
+		dayCtx, cancelDay := context.WithTimeout(ctx, dayScrapeTimeout)
+
 		var capture *dayCapture
-		err = chromedp.Run(ctx,
+		err = chromedp.Run(dayCtx,
 			chromedp.Navigate(dayURL),
 			chromedp.WaitVisible(`app-category`, chromedp.ByQuery),
 			waitForDay(tab.Date),
 			chromedp.Evaluate(jsCaptureMenu, &capture),
 		)
 		if err != nil {
+			cancelDay()
 			if debug {
 				log.Printf("Error scraping %s menu: %v", day, err)
 				continue // Try next day in debug mode
@@ -261,15 +295,17 @@ func ScrapeEspaceWebsite(pageURL string, debug bool) (*MenuData, error) {
 			return nil, fmt.Errorf("failed to scrape the %s menu: %w", day, err)
 		}
 		if capture == nil {
+			cancelDay()
 			return nil, fmt.Errorf("found no menu on the page for %s", day)
 		}
 
 		// Opening every dish to find its link is slow and clicks a lot of buttons, so
 		// losing them is not worth failing a menu over - the dish just gets no link.
 		links := make(map[string]string)
-		if err := chromedp.Run(ctx, evaluateAsync(jsDishLinks, &links)); err != nil {
+		if err := chromedp.Run(dayCtx, evaluateAsync(jsDishLinks, &links)); err != nil {
 			log.Printf("Warning: could not read the %s dish links: %v", day, err)
 		}
+		cancelDay()
 
 		days = append(days, DayMenu{
 			Day:    day,
