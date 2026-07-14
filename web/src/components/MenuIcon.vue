@@ -1,22 +1,22 @@
 <script setup>
-import { computed } from 'vue'
+import { computed } from 'vue';
 
 const props = defineProps({
   icon: {
     type: String,
-    required: true
-  }
+    required: true,
+  },
 });
 
 // map commonly misued icon names to the actual name
 const iconMappings = {
-  'bowl': 'rice-bowl',
+  bowl: 'rice-bowl',
   'bowl-vegi': 'rice-bowl',
   'bowl-fleisch': 'rice-bowl',
-  'burger': 'hamburger',
-  'pasta': 'spaghetti',
-  'meat': 'steak-rare',
-  'grilled-food': 'steak'
+  burger: 'hamburger',
+  pasta: 'spaghetti',
+  meat: 'steak-rare',
+  'grilled-food': 'steak',
 };
 
 const actualIcon = computed(() => {
@@ -25,11 +25,13 @@ const actualIcon = computed(() => {
 
 const iconCdnUrl = computed(() => {
   return `https://img.icons8.com/plasticine/200/${actualIcon.value}.png`;
-})
+});
 </script>
 
 <template>
-  <div class="w-12 h-12 p-1 bg-gray-200 rounded-full flex-shrink-0 flex items-center justify-center">
+  <div
+    class="w-12 h-12 p-1 bg-gray-200 rounded-full flex-shrink-0 flex items-center justify-center"
+  >
     <!-- decorative: the dish is already spelled out next to it -->
     <img :src="iconCdnUrl" alt="" aria-hidden="true" />
   </div>

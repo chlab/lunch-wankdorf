@@ -27,3 +27,5 @@ vendor/
 *.swp
 *.swo
 .claude
+# Playwright MCP session artifacts
+.playwright-mcp/

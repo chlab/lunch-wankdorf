@@ -1,13 +1,5 @@
 // ISO order: the menu week runs Monday to Sunday, matching getISOWeekNumber
-const DAYS = [
-  'monday',
-  'tuesday',
-  'wednesday',
-  'thursday',
-  'friday',
-  'saturday',
-  'sunday',
-];
+const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
 // Days a menu is published for
 export const WEEKDAYS = DAYS.slice(0, 5);
