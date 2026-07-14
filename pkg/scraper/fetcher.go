@@ -31,6 +31,8 @@ const (
 	dayScrapeTimeout   = 60 * time.Second
 	cookieClickTimeout = 5 * time.Second
 	daySwitchTimeout   = 15 * time.Second
+	// Short: a page that already failed to render must not hold up the diagnosis
+	pageDescribeTimeout = 10 * time.Second
 )
 
 // MenuData contains the scraped content
@@ -288,8 +290,9 @@ func scrapeEspace(pageURL, onlyDate string, debug bool) (*MenuData, error) {
 		)
 		if err != nil {
 			cancelDay()
+			log.Printf("Error scraping %s menu: %v\nThe page was showing: %s",
+				day, err, describePage(ctx))
 			if debug {
-				log.Printf("Error scraping %s menu: %v", day, err)
 				continue // Try next day in debug mode
 			}
 			return nil, fmt.Errorf("failed to scrape the %s menu: %w", day, err)
@@ -349,6 +352,20 @@ type dayCapture struct {
 }
 
 // The tab links carry the date they serve, e.g. .../Mittagsmenü/date/2026-07-17
+// jsDescribePage is what the page has to say for itself when the menu never showed up.
+const jsDescribePage = `(() => {
+	const selected = document.querySelector('[mat-tab-link][aria-selected="true"]');
+	return {
+		url: location.href,
+		title: document.title,
+		readyState: document.readyState,
+		tabs: document.querySelectorAll('[mat-tab-link]').length,
+		categories: document.querySelectorAll('app-category').length,
+		selected: selected ? selected.getAttribute('href') : '',
+		text: (document.body ? document.body.innerText : '').replace(/\s+/g, ' ').trim().slice(0, 400),
+	};
+})()`
+
 const jsWeekdayTabs = `[...document.querySelectorAll('[mat-tab-link]')]
 	.map((tab) => {
 		const href = tab.getAttribute('href') || '';
@@ -464,6 +481,33 @@ func rejectCookies() chromedp.ActionFunc {
 		}
 		return nil
 	}
+}
+
+// describePage reports what the browser is actually showing, so a scrape that timed
+// out waiting for the menu says whether it was looking at a consent wall, an error
+// page or a day other than the one it asked for - none of which the timeout itself
+// can tell apart. It runs on the scrape's context rather than the day's, which is
+// already spent by the time anything wants a diagnosis.
+func describePage(ctx context.Context) string {
+	ctx, cancel := context.WithTimeout(ctx, pageDescribeTimeout)
+	defer cancel()
+
+	var page struct {
+		URL        string `json:"url"`
+		Title      string `json:"title"`
+		ReadyState string `json:"readyState"`
+		Tabs       int    `json:"tabs"`
+		Categories int    `json:"categories"`
+		Selected   string `json:"selected"`
+		Text       string `json:"text"`
+	}
+	if err := chromedp.Evaluate(jsDescribePage, &page).Do(ctx); err != nil {
+		return fmt.Sprintf("(could not be read: %v)", err)
+	}
+
+	return fmt.Sprintf(
+		"url=%q title=%q readyState=%s tabs=%d categories=%d selectedTab=%q\ntext: %s",
+		page.URL, page.Title, page.ReadyState, page.Tabs, page.Categories, page.Selected, page.Text)
 }
 
 // waitForDay blocks until the page shows the day we asked for, so a slow render
