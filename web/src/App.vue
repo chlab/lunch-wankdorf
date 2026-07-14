@@ -8,6 +8,7 @@ import ViewToggle from './components/ViewToggle.vue';
 import { useMenus } from './composables/useMenus';
 import { APPENDED_RESTAURANTS, FOODTRUCKS } from './util/menu';
 import { WEEKDAYS, getDateForDay, getSelectableDay } from './util/date';
+import { dateSeed, pick, shuffle } from './util/random';
 
 // The day the menu was loaded for. Held in state so a tab left open overnight can
 // notice it went stale (see refreshIfStale).
@@ -105,24 +106,13 @@ const filteredMenuItems = computed(() => {
   return items;
 });
 
-// Get a seeded random number based on the current date (consistent for the whole day)
-const getSeededRandom = (seed) => {
-  const x = Math.sin(seed) * 10000;
-  return x - Math.floor(x);
-};
-
-// Daily recommendation - pick a random menu item (consistent for the day)
+// Daily recommendation - a random menu item, but the same one all day
 const dailyRecommendation = computed(() => {
   // Exclude foodtrucks as they aren't consistently there
   const items = filteredMenuItems.value.filter(item => item.restaurant !== FOODTRUCKS);
   if (items.length === 0) return null;
 
-  // Use date as seed so recommendation stays consistent throughout the day
-  const today = new Date();
-  const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
-  const randomIndex = Math.floor(getSeededRandom(seed) * items.length);
-
-  return items[randomIndex];
+  return pick(items, dateSeed(currentDate.value));
 });
 
 // Group menu items by restaurant for display
@@ -156,13 +146,12 @@ const groupedMenuItems = computed(() => {
     }
   });
 
-  // Randomize main restaurants, keep appended in fixed order
-  mainGroups.sort(() => Math.random() - 0.5);
+  // Randomize main restaurants (stable for the day), keep appended in fixed order
   appendedGroups.sort((a, b) =>
     APPENDED_RESTAURANTS.indexOf(a.restaurant) - APPENDED_RESTAURANTS.indexOf(b.restaurant)
   );
 
-  return [...mainGroups, ...appendedGroups];
+  return [...shuffle(mainGroups, dateSeed(currentDate.value)), ...appendedGroups];
 });
 
 // Browser back/forward navigation

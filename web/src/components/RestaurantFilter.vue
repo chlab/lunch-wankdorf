@@ -24,8 +24,9 @@ const selectRestaurant = (restaurant) => {
 
 <template>
   <div class="flex space-x-2" v-if="restaurants.length > 0">
-    <button 
+    <button
       v-for="restaurant in restaurants"
+      :key="restaurant"
       class="flex-shrink-0 flex px-3 py-1 rounded-full transition-colors cursor-pointer"
       :class="{
         'bg-gray-300 hover:bg-gray-400 hover:text-white': restaurant !== selectedRestaurant,
