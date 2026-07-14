@@ -15,20 +15,15 @@ import { dateSeed, pick, shuffle } from './util/random';
 // notice it went stale (see refreshIfStale).
 const today = ref(new Date());
 
-// ?day= makes a day linkable; anything outside Monday-Friday falls back to today
-const dayFromURL = () => {
-  const day = new URLSearchParams(window.location.search).get('day')?.toLowerCase();
-  return WEEKDAYS.includes(day) ? day : getSelectableDay(today.value);
-};
-
-const selectedDay = ref(dayFromURL());
+// The selected day lives in the history entry, not in the URL: back/forward still
+// step through the days, but a bookmark can't silently capture the day someone
+// happened to be looking at. A fresh load always starts on today.
+const selectedDay = ref(getSelectableDay(today.value));
 const currentDate = computed(() => getDateForDay(selectedDay.value, today.value));
 
 const selectDay = (day, { replace = false } = {}) => {
   selectedDay.value = day;
-  const url = new URL(window.location);
-  url.searchParams.set('day', day);
-  window.history[replace ? 'replaceState' : 'pushState']({}, '', url);
+  window.history[replace ? 'replaceState' : 'pushState']({ day }, '');
 };
 
 const { menu, availableRestaurants, loading, error, loadMenus } = useMenus();
@@ -118,9 +113,11 @@ const groupedMenuItems = computed(() => {
   ];
 });
 
-// Browser back/forward navigation
-const handlePopState = () => {
-  selectedDay.value = dayFromURL();
+// Browser back/forward navigation. The entry the app was opened with carries no
+// state of its own, so going all the way back lands on today again.
+const handlePopState = (event) => {
+  const day = event.state?.day;
+  selectedDay.value = WEEKDAYS.includes(day) ? day : getSelectableDay(today.value);
 };
 
 // Menu files are per ISO week, so a tab left open across midnight or into the next
