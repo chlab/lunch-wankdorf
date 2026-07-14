@@ -5,6 +5,7 @@ go 1.24
 require github.com/sashabaranov/go-openai v1.39.1
 
 require (
+	github.com/PuerkitoBio/goquery v1.10.2
 	github.com/aws/aws-sdk-go-v2 v1.41.6
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.15
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.99.1
@@ -17,7 +18,6 @@ require (
 )
 
 require (
-	github.com/PuerkitoBio/goquery v1.10.2 // indirect
 	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/antchfx/htmlquery v1.3.4 // indirect
 	github.com/antchfx/xmlquery v1.4.4 // indirect

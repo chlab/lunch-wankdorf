@@ -179,6 +179,8 @@ func createCompletion(prompt string, schema json.RawMessage, schemaName string) 
 func ParseRestaurantHtmlMenu(htmlContent string) (*DailyMenu, error) {
 	prompt := `Parse the following HTML extracted from a restaurant's weekly menu page. The text is in German.
 The week starts on Monday. A day may have no menu (holiday, closed) — return an empty array for that day.
+Dishes are listed under a heading naming the day they are served on. Put every dish under
+that day, and return every dish you are given — do not skip or summarize the later days.
 For each menu item provide:
 - name: dish name
 - description: dish description (remove double commas and other formatting noise but keep the content)
