@@ -30,11 +30,7 @@ export const FOODTRUCKS_ENABLED = false;
 // Restaurants pinned to the end of the list, in this order
 export const APPENDED_RESTAURANTS = [FOODTRUCKS, 'Turbolama'];
 
-// Espace only publishes a weekly PDF, so its links never point at a dish
-const RESTAURANTS_WITHOUT_LINKS = ['Espace'];
-
-// Where a dish's photo came from. Used to credit the restaurant in the lightbox,
-// and as the fallback for Espace, whose dishes carry no link of their own.
+// Where a dish's photo came from, to credit the restaurant in the lightbox
 export const RESTAURANT_URLS = {
   Gira: 'https://app.food2050.ch/de/v2/zfv/sbb/gira/mittagsverpflegung/menu/weekly',
   Luna: 'https://app.food2050.ch/de/v2/zfv/sbb/restaurant-luna/mittagsverpflegung/menu/weekly',
@@ -59,7 +55,7 @@ const safeLink = (link) => {
 const toMenuItem = (item, restaurant) => ({
   ...item,
   restaurant,
-  link: RESTAURANTS_WITHOUT_LINKS.includes(restaurant) ? '' : safeLink(item.link ?? ''),
+  link: safeLink(item.link ?? ''),
   icon: item.icon ?? '',
   foodtruck: item.foodtruck ?? '',
   // Scraped like the links, so they get the same treatment before reaching a src

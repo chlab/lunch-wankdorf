@@ -22,6 +22,14 @@ type DayMenu struct {
 	// that day's dish. Only set by scrapers whose page carries photos (Espace);
 	// food2050's photos live on the dish pages and are fetched from the dish links.
 	Photos map[string]string
+
+	// Links maps a category heading to the dish's page on the restaurant's site, for
+	// scrapers that have to work the link out for themselves (Espace). food2050 puts
+	// the link in the markup, so the model reads it straight off the page.
+	Links map[string]string
+
+	// URL is the day's own page, used for dishes we could not find a link for.
+	URL string
 }
 
 // Dish links end in the date the dish is served on, e.g.

@@ -213,6 +213,10 @@ func processHTMLMenu(restaurant RestaurantMenu, config Config) error {
 	// Add base URL to relative links
 	processMenuLinks(menu, restaurant.BaseURL)
 
+	// Espace's dish cards are not links, so the scraper had to open each dish to
+	// find its URL. Whatever it could not open falls back to the day's menu page.
+	addDishLinks(menu, days)
+
 	// Dish photos, where the restaurant has them. Espace only publishes a day's
 	// photos on the morning of that day, so the rest of its week is filled in later
 	// by the photo job (see RunPhotoUpdate).

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/chromedp/cdproto/browser"
+	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
 	"github.com/gocolly/colly/v2"
 )
@@ -21,7 +22,8 @@ import (
 const (
 	userAgent          = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
 	httpRequestTimeout = 30 * time.Second
-	chromeTimeout      = 2 * time.Minute
+	// Generous: each of Espace's dishes has to be opened to find its link
+	chromeTimeout      = 5 * time.Minute
 	cookieClickTimeout = 5 * time.Second
 	daySwitchTimeout   = 15 * time.Second
 )
@@ -262,19 +264,28 @@ func ScrapeEspaceWebsite(pageURL string, debug bool) (*MenuData, error) {
 			return nil, fmt.Errorf("found no menu on the page for %s", day)
 		}
 
+		// Opening every dish to find its link is slow and clicks a lot of buttons, so
+		// losing them is not worth failing a menu over - the dish just gets no link.
+		links := make(map[string]string)
+		if err := chromedp.Run(ctx, evaluateAsync(jsDishLinks, &links)); err != nil {
+			log.Printf("Warning: could not read the %s dish links: %v", day, err)
+		}
+
 		days = append(days, DayMenu{
 			Day:    day,
 			Date:   tab.Date,
 			HTML:   capture.HTML,
 			Dishes: capture.Dishes,
 			Photos: capture.Photos,
+			Links:  links,
+			URL:    dayURL,
 		})
 
 		// Kept whole for the debug output; each day is parsed on its own
 		fmt.Fprintf(&allMenus, "<h2>%s (%s)</h2>\n%s\n", day, tab.Date, capture.HTML)
 
-		log.Printf("Scraped %s %s: %d dishes, %d photos (%d bytes)",
-			day, tab.Date, capture.Dishes, len(capture.Photos), len(capture.HTML))
+		log.Printf("Scraped %s %s: %d dishes, %d photos, %d links (%d bytes)",
+			day, tab.Date, capture.Dishes, len(capture.Photos), len(links), len(capture.HTML))
 	}
 
 	htmlContent := allMenus.String()
@@ -356,6 +367,50 @@ const jsCaptureMenu = `(() => {
 
 	return { html: clone.outerHTML, dishes: onOffer.length, photos };
 })()`
+
+// The dish cards are not links: they are cards with a click handler, and the dish's
+// URL only exists once the app has routed to it. So we open each dish, note where
+// we ended up, and come back. Best effort - a dish we can't open simply gets no
+// link, and keeps the rest of the menu.
+const jsDishLinks = `(async () => {
+	const dayURL = location.href;
+	const links = {};
+
+	const categories = [...document.querySelectorAll('app-category')];
+	for (let i = 0; i < categories.length; i++) {
+		// The click routes away, so the elements have to be looked up again each time
+		const category = [...document.querySelectorAll('app-category')][i];
+		if (!category) continue;
+
+		const heading = category.innerText.split('\n')[0].trim();
+		const grid = category.querySelector('app-product-grid');
+		const dish = grid ? grid.innerText.replace(/\s+/g, ' ').trim() : '';
+		// nothing on offer, so nothing to link to
+		if (!heading || dish === '' || dish === '.') continue;
+
+		const card = grid.querySelector('mat-card');
+		if (!card) continue;
+
+		card.click();
+		await new Promise((resolve) => setTimeout(resolve, 800));
+
+		if (location.href !== dayURL) {
+			links[heading] = location.href;
+			history.back();
+			await new Promise((resolve) => setTimeout(resolve, 800));
+		}
+	}
+
+	return links;
+})()`
+
+// evaluateAsync runs an expression that returns a promise and waits for it, which
+// chromedp.Evaluate does not do on its own.
+func evaluateAsync(expression string, result any) chromedp.Action {
+	return chromedp.Evaluate(expression, result, func(p *runtime.EvaluateParams) *runtime.EvaluateParams {
+		return p.WithAwaitPromise(true)
+	})
+}
 
 // rejectCookies declines the cookie banner, tolerating its absence.
 //

@@ -97,6 +97,32 @@ func fetchDishPhotos(items []*ai.MenuItem) int {
 	return found
 }
 
+// addDishLinks gives the dishes the link to their page on the restaurant's site,
+// for scrapers that had to work it out themselves. A dish whose page we could not
+// reach links to the day's menu instead, which is better than no link at all.
+func addDishLinks(menu *ai.DailyMenu, days []scraper.DayMenu) {
+	for _, day := range days {
+		if len(day.Links) == 0 && day.URL == "" {
+			continue
+		}
+
+		items := menu.Menu[capitalize(day.Day)]
+		for i := range items {
+			item := &items[i]
+			// food2050 puts the link in the markup, so the model already has it
+			if item.Link != "" {
+				continue
+			}
+
+			if link := day.Links[item.Category]; link != "" {
+				item.Link = link
+			} else {
+				item.Link = day.URL
+			}
+		}
+	}
+}
+
 // photoMerge is what filling in the photos did, so the caller can tell an
 // uneventful run ("no new photos yet") from a broken one ("photos found, but they
 // belong to no dish on the menu").
