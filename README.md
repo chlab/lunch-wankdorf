@@ -60,9 +60,43 @@ The application will:
 1. Scrape the weekly menu for one restaurant
 2. Split the week into one section per day (see below)
 3. Send each day to OpenAI separately and check the result against the dishes the page offered
-4. Upload the structured menu data to a Cloudflare R2 bucket
+4. Add the dish photos (see below)
+5. Upload the structured menu data to a Cloudflare R2 bucket
 
 The frontend app retrieves the structured menu data from the Cloudflare R2 bucket and displays it.
+
+## Dish photos
+
+Where a restaurant has a photo of a dish, the frontend shows it instead of the
+icon. Only about 60% of the SBB dishes have one, so the icon is not going away.
+
+The two restaurant types publish photos differently, which is why there are two
+jobs:
+
+- **Gira, Luna, Sole** keep the photo on each dish's own page. The menu items
+  already carry that link, so the weekly run follows it and reads the photo out of
+  the page's embedded data. The whole week is available up front.
+- **Espace** has the photo on the menu page itself, but only publishes a day's
+  photos on the morning of that day (they appear around 07:30) — the rest of the
+  week serves a placeholder. `Daily Photo Fetch` therefore runs every weekday and
+  fills them in as they appear:
+
+  ```bash
+  go run ./cmd/app -restaurant espace -photos -upload
+  ```
+
+  It deliberately does **not** re-parse the menu. It scrapes the photos, fills the
+  blanks in the published JSON and puts it back. Re-running the model daily would
+  pay it to rewrite text we already have, and risk regressing a menu that was
+  already correct.
+
+Photos are matched to dishes on the **category** heading ("Chefs Choice", "Pizza
+Del Giorno"), which the model copies verbatim — the dish name is no good as a key,
+because the model rewrites it. If the categories ever stop lining up, the job says
+so rather than quietly adding nothing.
+
+No image is ever downloaded or stored: both restaurants' CDNs resize on request, so
+the menu carries a small URL for the list and a larger one for the lightbox.
 
 ## How the parsing works, and why
 
