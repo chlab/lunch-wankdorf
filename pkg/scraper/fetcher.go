@@ -501,7 +501,7 @@ func describePage(ctx context.Context) string {
 		Selected   string `json:"selected"`
 		Text       string `json:"text"`
 	}
-	if err := chromedp.Evaluate(jsDescribePage, &page).Do(ctx); err != nil {
+	if err := chromedp.Run(ctx, chromedp.Evaluate(jsDescribePage, &page)); err != nil {
 		return fmt.Sprintf("(could not be read: %v)", err)
 	}
 
