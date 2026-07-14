@@ -30,6 +30,7 @@ const iconCdnUrl = computed(() => {
 
 <template>
   <div class="w-12 h-12 p-1 bg-gray-200 rounded-full flex-shrink-0 flex items-center justify-center">
-    <img :src="iconCdnUrl" :alt="`${actualIcon} icon`" />
+    <!-- decorative: the dish is already spelled out next to it -->
+    <img :src="iconCdnUrl" alt="" aria-hidden="true" />
   </div>
 </template>
