@@ -14,10 +14,13 @@ import foodtrucksMenu from '../foodtrucks.json';
  * @property {string} [foodtruck] - name of the truck, foodtruck items only
  */
 
-const BASE_URL = 'https://pub-201cbf927f0b4c8991d32485a57b9d40.r2.dev';
+// The R2 bucket doesn't allow localhost, so local dev can point at a mirror instead
+const BASE_URL =
+  import.meta.env.VITE_MENU_BASE_URL ?? 'https://pub-201cbf927f0b4c8991d32485a57b9d40.r2.dev';
 
-// Restaurants we fetch a weekly file for (freibank is disabled)
-export const RESTAURANTS = ['gira', 'luna', 'sole', 'espace', 'turbolama'];
+// Restaurants we fetch a weekly file for. Freibank and Turbolama are disabled: they
+// kept moving their menu around, so nothing is scraped for them and the file 404s.
+export const RESTAURANTS = ['gira', 'luna', 'sole', 'espace'];
 
 export const FOODTRUCKS = 'Foodtrucks';
 export const FOODTRUCKS_ENABLED = false;
