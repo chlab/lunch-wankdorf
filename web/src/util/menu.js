@@ -12,6 +12,8 @@ import foodtrucksMenu from '../foodtrucks.json';
  * @property {string} [link] - absolute http(s) URL, '' when there is none
  * @property {string} restaurant - display name, e.g. 'Gira'
  * @property {string} [foodtruck] - name of the truck, foodtruck items only
+ * @property {string} [photo] - thumbnail of the dish, '' when the restaurant has none
+ * @property {string} [photoLarge] - the same photo for the lightbox, '' when there is none
  */
 
 // The R2 bucket doesn't allow localhost, so local dev can point at a mirror instead
@@ -51,6 +53,9 @@ const toMenuItem = (item, restaurant) => ({
   link: RESTAURANTS_WITHOUT_LINKS.includes(restaurant) ? '' : safeLink(item.link ?? ''),
   icon: item.icon ?? '',
   foodtruck: item.foodtruck ?? '',
+  // Scraped like the links, so they get the same treatment before reaching a src
+  photo: safeLink(item.photo ?? ''),
+  photoLarge: safeLink(item.photoLarge ?? ''),
 });
 
 const addItems = (combined, day, items) => {

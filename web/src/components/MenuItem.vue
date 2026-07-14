@@ -1,4 +1,5 @@
 <script setup>
+import { computed, ref } from 'vue';
 import MenuIcon from './MenuIcon.vue';
 
 const toTitleCase = (str) => {
@@ -9,7 +10,7 @@ const normalizeTitle = (str) => {
   return toTitleCase(str.replace(/[«»"]/g, '').trim());
 };
 
-defineProps({
+const props = defineProps({
   /** @type {import('../util/menu').MenuItem} */
   item: {
     type: Object,
@@ -25,6 +26,15 @@ defineProps({
     default: false,
   },
 });
+
+const emit = defineEmits(['showPhoto']);
+
+// The photos are hotlinked from the restaurants, so a dead one falls back to the
+// icon rather than leaving a broken image behind
+const photoFailed = ref(false);
+
+const photo = computed(() => (photoFailed.value ? '' : props.item.photo));
+const title = computed(() => normalizeTitle(props.item.name));
 </script>
 
 <template>
@@ -39,7 +49,7 @@ defineProps({
     <div :class="compact ? '' : 'px-6 py-4 pb-6'">
       <!-- Title row with vegi icon -->
       <div class="flex items-center gap-2">
-        <h3 :class="[compact ? 'text-sm' : 'font-medium']">{{ normalizeTitle(item.name) }}</h3>
+        <h3 :class="[compact ? 'text-sm' : 'font-medium']">{{ title }}</h3>
         <span
           v-if="item.type === 'vegetarian'"
           class="text-green-600"
@@ -64,9 +74,23 @@ defineProps({
           </svg>
         </span>
       </div>
-      <!-- Description row -->
+      <!-- Description row, with the dish photo where the icon would otherwise go -->
       <div class="flex items-start gap-3 mt-1">
-        <MenuIcon v-if="item.icon && !compact" :icon="item.icon" />
+        <button
+          v-if="photo && !compact"
+          class="size-12 flex-shrink-0 overflow-hidden rounded-full cursor-pointer transition-transform duration-200 hover:scale-105"
+          :aria-label="`Foto von ${title} vergrössern`"
+          @click="emit('showPhoto', item)"
+        >
+          <img
+            :src="photo"
+            alt=""
+            loading="lazy"
+            class="size-full object-cover"
+            @error="photoFailed = true"
+          />
+        </button>
+        <MenuIcon v-else-if="item.icon && !compact" :icon="item.icon" />
         <p :class="[compact ? 'text-xs text-gray-500' : 'text-gray-600']">{{ item.description }}</p>
       </div>
       <!-- Badges row (the foodtruck badge needs the room a card gives it) -->
@@ -124,7 +148,7 @@ defineProps({
       :href="item.link"
       target="_blank"
       rel="noopener noreferrer"
-      :aria-label="`${normalizeTitle(item.name)} auf der Website von ${item.restaurant} ansehen`"
+      :aria-label="`${title} auf der Website von ${item.restaurant} ansehen`"
       class="absolute bottom-3 right-3 bg-gray-200 rounded-full p-1.5 hover:bg-gray-300"
     >
       <svg

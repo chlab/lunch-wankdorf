@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import MenuItem from './components/MenuItem.vue';
 import MenuItemFilter from './components/MenuItemFilter.vue';
+import PhotoLightbox from './components/PhotoLightbox.vue';
 import RestaurantFilter from './components/RestaurantFilter.vue';
 import Skeleton from './components/Skeleton.vue';
 import DateNavigator from './components/DateNavigator.vue';
@@ -40,6 +41,9 @@ const clearFilters = () => {
   selectedRestaurant.value = '';
   vegetarianFilter.value = false;
 };
+
+// The dish whose photo is open in the lightbox, if any
+const photoItem = ref(null);
 
 const formattedDate = computed(() =>
   new Intl.DateTimeFormat('de-CH', { weekday: 'long' }).format(currentDate.value)
@@ -201,7 +205,12 @@ onUnmounted(() => {
                 : ''
             "
           >
-            <MenuItem :item="dailyRecommendation" :compact="compactView" show-restaurant />
+            <MenuItem
+              :item="dailyRecommendation"
+              :compact="compactView"
+              show-restaurant
+              @show-photo="photoItem = $event"
+            />
           </div>
         </div>
 
@@ -221,11 +230,19 @@ onUnmounted(() => {
               :key="index"
               :item="item"
               :compact="compactView"
+              @show-photo="photoItem = $event"
             />
           </div>
         </div>
       </div>
     </main>
+
+    <PhotoLightbox
+      v-if="photoItem"
+      :photo="photoItem.photoLarge || photoItem.photo"
+      :name="photoItem.name"
+      @close="photoItem = null"
+    />
 
     <footer class="bg-gray-100 py-4 mt-auto">
       <div class="container space-x-10 mx-auto text-center text-gray-400">
