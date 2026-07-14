@@ -33,6 +33,15 @@ export const APPENDED_RESTAURANTS = [FOODTRUCKS, 'Turbolama'];
 // Espace only publishes a weekly PDF, so its links never point at a dish
 const RESTAURANTS_WITHOUT_LINKS = ['Espace'];
 
+// Where a dish's photo came from. Used to credit the restaurant in the lightbox,
+// and as the fallback for Espace, whose dishes carry no link of their own.
+export const RESTAURANT_URLS = {
+  Gira: 'https://app.food2050.ch/de/v2/zfv/sbb/gira/mittagsverpflegung/menu/weekly',
+  Luna: 'https://app.food2050.ch/de/v2/zfv/sbb/restaurant-luna/mittagsverpflegung/menu/weekly',
+  Sole: 'https://app.food2050.ch/de/v2/zfv/sbb/sole/mittagsverpflegung/menu/weekly',
+  Espace: 'https://sv-gastronomie.ch/menu/Post,%20Restaurant%20Espace,%20Bern/Mittagsmen%C3%BC',
+};
+
 // 'gira' -> 'Gira'
 const displayName = (restaurant) => restaurant.charAt(0).toUpperCase() + restaurant.slice(1);
 

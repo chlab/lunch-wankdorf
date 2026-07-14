@@ -18,8 +18,8 @@ func TestPhotoURLsResizesEspacePhotos(t *testing.T) {
 	if strings.Contains(thumb, "ci_sign") || strings.Contains(large, "ci_sign") {
 		t.Errorf("kept the page's signature, which only covers its own size:\n%s\n%s", thumb, large)
 	}
-	if !strings.Contains(thumb, "w=96") {
-		t.Errorf("thumb = %q, want a 96px wide image", thumb)
+	if !strings.Contains(thumb, "w=128") {
+		t.Errorf("thumb = %q, want a 128px wide image", thumb)
 	}
 	if !strings.Contains(large, "w=900") {
 		t.Errorf("large = %q, want a 900px wide image", large)

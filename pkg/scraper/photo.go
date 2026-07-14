@@ -15,7 +15,9 @@ import (
 // frontend a thumbnail to sit where the icon goes and a bigger one for the
 // lightbox, rather than shipping the originals.
 const (
-	thumbWidth = 96
+	// The thumbnail is shown at 64px, asked for at twice that so it stays sharp on
+	// the phone screens this is mostly read on
+	thumbWidth = 128
 	largeWidth = 900
 )
 

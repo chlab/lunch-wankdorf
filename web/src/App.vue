@@ -237,12 +237,7 @@ onUnmounted(() => {
       </div>
     </main>
 
-    <PhotoLightbox
-      v-if="photoItem"
-      :photo="photoItem.photoLarge || photoItem.photo"
-      :name="photoItem.name"
-      @close="photoItem = null"
-    />
+    <PhotoLightbox v-if="photoItem" :item="photoItem" @close="photoItem = null" />
 
     <footer class="bg-gray-100 py-4 mt-auto">
       <div class="container space-x-10 mx-auto text-center text-gray-400">

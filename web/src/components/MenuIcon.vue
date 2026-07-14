@@ -29,8 +29,9 @@ const iconCdnUrl = computed(() => {
 </script>
 
 <template>
+  <!-- Same size as a dish photo, so a list of both doesn't look ragged -->
   <div
-    class="w-12 h-12 p-1 bg-gray-200 rounded-full flex-shrink-0 flex items-center justify-center"
+    class="size-16 p-1.5 bg-gray-200 rounded-full flex-shrink-0 flex items-center justify-center"
   >
     <!-- decorative: the dish is already spelled out next to it -->
     <img :src="iconCdnUrl" alt="" aria-hidden="true" />

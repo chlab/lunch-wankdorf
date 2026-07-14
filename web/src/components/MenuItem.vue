@@ -1,14 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import MenuIcon from './MenuIcon.vue';
-
-const toTitleCase = (str) => {
-  return str.toLowerCase().replace(/(?:^|\s)\S/g, (char) => char.toUpperCase());
-};
-
-const normalizeTitle = (str) => {
-  return toTitleCase(str.replace(/[«»"]/g, '').trim());
-};
+import { dishTitle } from '../util/text';
 
 const props = defineProps({
   /** @type {import('../util/menu').MenuItem} */
@@ -34,7 +27,7 @@ const emit = defineEmits(['showPhoto']);
 const photoFailed = ref(false);
 
 const photo = computed(() => (photoFailed.value ? '' : props.item.photo));
-const title = computed(() => normalizeTitle(props.item.name));
+const title = computed(() => dishTitle(props.item.name));
 </script>
 
 <template>
@@ -75,10 +68,10 @@ const title = computed(() => normalizeTitle(props.item.name));
         </span>
       </div>
       <!-- Description row, with the dish photo where the icon would otherwise go -->
-      <div class="flex items-start gap-3 mt-1">
+      <div :class="['flex items-start gap-3', compact ? 'mt-1' : 'mt-3']">
         <button
           v-if="photo && !compact"
-          class="size-12 flex-shrink-0 overflow-hidden rounded-full cursor-pointer transition-transform duration-200 hover:scale-105"
+          class="size-16 flex-shrink-0 overflow-hidden rounded-full border-2 border-gray-300 shadow-sm cursor-pointer transition-transform duration-200 hover:scale-105"
           :aria-label="`Foto von ${title} vergrössern`"
           @click="emit('showPhoto', item)"
         >
