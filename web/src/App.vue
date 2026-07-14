@@ -7,42 +7,27 @@ import Menu from './components/Menu.vue';
 import ViewToggle from './components/ViewToggle.vue';
 import { useMenus } from './composables/useMenus';
 import { APPENDED_RESTAURANTS, FOODTRUCKS } from './util/menu';
+import { WEEKDAYS, getDateForDay, getSelectableDay } from './util/date';
 
-const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+// The day the menu was loaded for. Held in state so a tab left open overnight can
+// notice it went stale (see refreshIfStale).
+const today = ref(new Date());
 
-// Get current day name
-const getCurrentDay = () => days[new Date().getDay()];
-
-// Get day from URL (only used for browser back/forward navigation)
-const getDayFromURL = () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const dayParam = urlParams.get('day');
-  if (dayParam && days.includes(dayParam.toLowerCase())) {
-    return dayParam.toLowerCase();
-  }
-  return getCurrentDay();
+// ?day= makes a day linkable; anything outside Monday-Friday falls back to today
+const dayFromURL = () => {
+  const day = new URLSearchParams(window.location.search).get('day')?.toLowerCase();
+  return WEEKDAYS.includes(day) ? day : getSelectableDay(today.value);
 };
 
-// Function to update URL with current day
-const updateURLWithDay = (day) => {
+const selectedDay = ref(dayFromURL());
+const currentDate = computed(() => getDateForDay(selectedDay.value, today.value));
+
+const selectDay = (day, { replace = false } = {}) => {
+  selectedDay.value = day;
   const url = new URL(window.location);
   url.searchParams.set('day', day);
-  window.history.pushState({}, '', url);
+  window.history[replace ? 'replaceState' : 'pushState']({}, '', url);
 };
-
-// Get a date adjusted to a specific day of the week
-const getDateForDay = (dayName) => {
-  const targetIndex = days.indexOf(dayName);
-  const now = new Date();
-  const diff = targetIndex - now.getDay();
-  const date = new Date(now);
-  date.setDate(date.getDate() + diff);
-  return date;
-};
-
-// Current date and derived values (always start with today, ignore URL param on initial load)
-const selectedDay = ref(getCurrentDay());
-const currentDate = ref(getDateForDay(selectedDay.value));
 
 const { menu, availableRestaurants, loading, error, loadMenus } = useMenus();
 
@@ -61,21 +46,16 @@ const formattedDate = computed(() => {
   }).format(currentDate.value);
 });
 
-// Navigation bounds (Monday = 1, Friday = 5)
-const canGoBack = computed(() => currentDate.value.getDay() !== 1);
-const canGoForward = computed(() => currentDate.value.getDay() !== 5);
+// Navigation is bounded by the published days (Monday-Friday)
+const canGoBack = computed(() => WEEKDAYS.indexOf(selectedDay.value) > 0);
+const canGoForward = computed(() => WEEKDAYS.indexOf(selectedDay.value) < WEEKDAYS.length - 1);
 
 // Navigate by delta days (-1 for previous, +1 for next)
 const navigateDay = (delta) => {
-  const currentDayOfWeek = currentDate.value.getDay();
-  if ((delta < 0 && currentDayOfWeek === 1) || (delta > 0 && currentDayOfWeek === 5)) {
-    return;
+  const day = WEEKDAYS[WEEKDAYS.indexOf(selectedDay.value) + delta];
+  if (day) {
+    selectDay(day);
   }
-  const newDate = new Date(currentDate.value);
-  newDate.setDate(newDate.getDate() + delta);
-  currentDate.value = newDate;
-  selectedDay.value = days[currentDate.value.getDay()];
-  updateURLWithDay(selectedDay.value);
 };
 
 const goToPreviousDay = () => navigateDay(-1);
@@ -180,25 +160,32 @@ const groupedMenuItems = computed(() => {
   return [...mainGroups, ...appendedGroups];
 });
 
-// Handle popstate events (browser back/forward navigation)
+// Browser back/forward navigation
 const handlePopState = () => {
-  const newDay = getDayFromURL();
-  if (newDay !== selectedDay.value) {
-    selectedDay.value = newDay;
-    currentDate.value = getDateForDay(newDay);
+  selectedDay.value = dayFromURL();
+};
+
+// Menu files are per ISO week, so a tab left open across midnight or into the next
+// week keeps showing what it loaded. Re-check whenever the tab becomes visible.
+const refreshIfStale = () => {
+  const now = new Date();
+  if (document.visibilityState !== 'visible' || now.toDateString() === today.value.toDateString()) {
+    return;
   }
+  today.value = now;
+  selectDay(getSelectableDay(now), { replace: true });
+  loadMenus(now);
 };
 
 onMounted(() => {
-  loadMenus();
-  
-  // Add event listener for browser navigation
+  loadMenus(today.value);
   window.addEventListener('popstate', handlePopState);
+  document.addEventListener('visibilitychange', refreshIfStale);
 });
 
-// Clean up event listener when component is unmounted
 onUnmounted(() => {
   window.removeEventListener('popstate', handlePopState);
+  document.removeEventListener('visibilitychange', refreshIfStale);
 });
 </script>
 <template>

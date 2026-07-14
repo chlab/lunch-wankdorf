@@ -1,4 +1,4 @@
-import { getISOWeekNumber, WEEKDAYS } from './date';
+import { getISOWeekNumber, getISOWeekYear, WEEKDAYS } from './date';
 import foodtrucksMenu from '../foodtrucks.json';
 
 /**
@@ -59,7 +59,7 @@ const addItems = (combined, day, items) => {
  * Rejects on network errors and non-2xx responses.
  */
 export async function fetchMenu(restaurant, date) {
-  const filename = `${restaurant}_${getISOWeekNumber(date)}_${date.getFullYear()}.json`;
+  const filename = `${restaurant}_${getISOWeekNumber(date)}_${getISOWeekYear(date)}.json`;
   const response = await fetch(`${BASE_URL}/${filename}`);
   if (!response.ok) {
     throw new Error(`${response.status} ${response.statusText}`);
