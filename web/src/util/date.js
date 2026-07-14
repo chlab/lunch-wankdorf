@@ -1,3 +1,6 @@
+// Days a menu is published for
+export const WEEKDAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+
 export function getISOWeekNumber(date = new Date()) {
     const target = new Date(date.valueOf());
   

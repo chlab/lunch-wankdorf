@@ -5,31 +5,10 @@ import Skeleton from './components/Skeleton.vue';
 import DateNavigator from './components/DateNavigator.vue';
 import Menu from './components/Menu.vue';
 import ViewToggle from './components/ViewToggle.vue';
-import { getISOWeekNumber } from './util/date';
-import foodtrucksMenu from './foodtrucks.json';
+import { useMenus } from './composables/useMenus';
+import { APPENDED_RESTAURANTS, FOODTRUCKS } from './util/menu';
 
-const baseUrl = 'https://pub-201cbf927f0b4c8991d32485a57b9d40.r2.dev';
 const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-const foodtrucksEnabled = false;
-
-// Get menu filenames based on current week number and year
-const getMenuFiles = () => {
-  const now = new Date();
-  const weekNumber = getISOWeekNumber();
-  const year = now.getFullYear();
-
-  // Return menu filenames with week number and year format
-  return {
-    gira: `gira_${weekNumber}_${year}.json`,
-    luna: `luna_${weekNumber}_${year}.json`,
-    sole: `sole_${weekNumber}_${year}.json`,
-    espace: `espace_${weekNumber}_${year}.json`,
-    // freibank: `freibank_${weekNumber}_${year}.json`, // disabled
-    turbolama: `turbolama_${weekNumber}_${year}.json`,
-  };
-};
-
-const menuFiles = getMenuFiles();
 
 // Get current day name
 const getCurrentDay = () => days[new Date().getDay()];
@@ -65,11 +44,9 @@ const getDateForDay = (dayName) => {
 const selectedDay = ref(getCurrentDay());
 const currentDate = ref(getDateForDay(selectedDay.value));
 
-const menu = ref({});
-const loading = ref(true);
-const error = ref(null);
+const { menu, availableRestaurants, loading, error, loadMenus } = useMenus();
+
 const selectedRestaurant = ref('');
-const availableRestaurants = ref([]);
 const vegetarianFilter = ref(false);
 const compactView = ref(localStorage.getItem('compactView') === 'true');
 
@@ -103,124 +80,6 @@ const navigateDay = (delta) => {
 
 const goToPreviousDay = () => navigateDay(-1);
 const goToNextDay = () => navigateDay(1);
-
-// Load all menus and combine them
-const loadMenus = async () => {
-  try {
-    loading.value = true;
-    const combinedMenu = {};
-    
-    // Create an array of promises for all fetch requests
-    const fetchPromises = Object.entries(menuFiles).map(async ([restaurant, filename]) => {
-      const url = `${baseUrl}/${filename}`;
-      
-      try {
-        const response = await fetch(url);
-        if (!response.ok) {
-          console.error(`Failed to fetch menu for ${restaurant}: ${response.status} ${response.statusText}`);
-          return null;
-        }
-        
-        const menuData = await response.json();
-        return { restaurant: restaurant.charAt(0).toUpperCase() + restaurant.slice(1), data: menuData };
-      } catch (err) {
-        console.error(`Error fetching menu for ${restaurant}:`, err);
-        return null;
-      }
-    });
-    
-    // Wait for all fetches to complete
-    const results = await Promise.all(fetchPromises);
-    
-    // Keep track of restaurant types for ordering
-    const dailyRestaurants = [];
-    const tempWeeklyRestaurants = [];
-    
-    // Process the results and combine menus
-    results.forEach(result => {
-      if (!result) return;
-      
-      const { restaurant, data: menuData } = result;
-      
-      // Track restaurants by type
-      if (menuData.type === 'daily') {
-        dailyRestaurants.push(restaurant);
-      } else if (menuData.type === 'weekly') {
-        tempWeeklyRestaurants.push(restaurant);
-      }
-      
-      // Process based on menu type
-      if (menuData.type === 'daily' && menuData.menu) {
-        // For daily menus (organized by day)
-        Object.keys(menuData.menu).forEach(day => {
-          // Normalize day name to lowercase format
-          const normalizedDay = day.toLowerCase();
-          
-          if (!combinedMenu[normalizedDay]) {
-            combinedMenu[normalizedDay] = [];
-          }
-          
-          // Add restaurant name to each menu item
-          const itemsWithRestaurant = menuData.menu[day].map(item => ({
-            ...item,
-            restaurant: restaurant
-          }));
-          
-          // Add items to combined menu
-          combinedMenu[normalizedDay] = [...combinedMenu[normalizedDay], ...itemsWithRestaurant];
-        });
-      } else if (menuData.type === 'weekly' && menuData.menu) {
-        // For weekly menus (same items all week)
-        // Add weekly menu items to all weekdays (Monday-Friday)
-        ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].forEach(day => {
-          if (!combinedMenu[day]) {
-            combinedMenu[day] = [];
-          }
-          
-          // Add restaurant name to each menu item and add to the combined menu
-          const itemsWithRestaurant = menuData.menu.map(item => ({
-            ...item,
-            restaurant: restaurant
-          }));
-          
-          // Add to combined menu (we'll sort later in the filteredMenuItems computed)
-          combinedMenu[day] = [...combinedMenu[day], ...itemsWithRestaurant];
-        });
-      }
-    });
-    
-    // Add static foodtrucks menu to combined menu
-    if (foodtrucksEnabled && foodtrucksMenu.type === 'daily' && foodtrucksMenu.menu) {
-      Object.keys(foodtrucksMenu.menu).forEach(day => {
-        // Normalize day name to lowercase format
-        const normalizedDay = day.toLowerCase();
-        
-        if (!combinedMenu[normalizedDay]) {
-          combinedMenu[normalizedDay] = [];
-        }
-        
-        const foodtruckDailyItems = foodtrucksMenu.menu[day].filter(item => item.enabled);
-
-        // Add foodtrucks items to combined menu
-        combinedMenu[normalizedDay] = [...combinedMenu[normalizedDay], ...foodtruckDailyItems];
-      });
-    }
-    
-    // Set restaurants in the correct order: daily first, then foodtrucks, then weekly
-    availableRestaurants.value = [
-      ...dailyRestaurants,
-      ...(foodtrucksEnabled ? ['Foodtrucks'] : []),
-      ...tempWeeklyRestaurants
-    ];
-    
-    menu.value = combinedMenu;
-  } catch (err) {
-    console.error('Error loading menus:', err);
-    error.value = err.message;
-  } finally {
-    loading.value = false;
-  }
-};
 
 // Handle restaurant selection from RestaurantFilter component
 const handleRestaurantSelect = (restaurant) => {
@@ -270,7 +129,7 @@ const getSeededRandom = (seed) => {
 // Daily recommendation - pick a random menu item (consistent for the day)
 const dailyRecommendation = computed(() => {
   // Exclude foodtrucks as they aren't consistently there
-  const items = filteredMenuItems.value.filter(item => item.restaurant !== 'Foodtrucks');
+  const items = filteredMenuItems.value.filter(item => item.restaurant !== FOODTRUCKS);
   if (items.length === 0) return null;
 
   // Use date as seed so recommendation stays consistent throughout the day
@@ -299,16 +158,13 @@ const groupedMenuItems = computed(() => {
     groupsMap[item.restaurant].push(item);
   });
 
-  // Restaurants that should always be at the end
-  const appendedRestaurants = ['Foodtrucks', 'Turbolama'];
-
-  // Separate main restaurants from appended ones
+  // Separate main restaurants from the ones pinned to the end
   const mainGroups = [];
   const appendedGroups = [];
 
   Object.keys(groupsMap).forEach(restaurant => {
     const group = { restaurant, items: groupsMap[restaurant] };
-    if (appendedRestaurants.includes(restaurant)) {
+    if (APPENDED_RESTAURANTS.includes(restaurant)) {
       appendedGroups.push(group);
     } else {
       mainGroups.push(group);
@@ -318,7 +174,7 @@ const groupedMenuItems = computed(() => {
   // Randomize main restaurants, keep appended in fixed order
   mainGroups.sort(() => Math.random() - 0.5);
   appendedGroups.sort((a, b) =>
-    appendedRestaurants.indexOf(a.restaurant) - appendedRestaurants.indexOf(b.restaurant)
+    APPENDED_RESTAURANTS.indexOf(a.restaurant) - APPENDED_RESTAURANTS.indexOf(b.restaurant)
   );
 
   return [...mainGroups, ...appendedGroups];
