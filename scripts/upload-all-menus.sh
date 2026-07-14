@@ -1,26 +1,27 @@
 #!/bin/bash
-# Script to run main.go for all available restaurants and upload them to R2
+# Fetch this week's menu for every restaurant and publish it to R2.
+#
+# Needs OPENAI_API_KEY and the CLOUDFLARE_* credentials (a .env in the project root
+# is picked up automatically).
 
 set -e
 
-echo "Starting script to fetch and upload menus for all restaurants..."
+# Turbolama and Freibank are disabled: they kept moving their menu around, so
+# nothing is scraped for them.
+RESTAURANTS=("gira" "luna" "sole" "espace")
 
-RESTAURANTS=("gira" "luna" "sole" "espace" "turbolama" "freibank")
-
-MAIN_DIR="$(dirname "$(dirname "$0")")/cmd/app"
 cd "$(dirname "$(dirname "$0")")"
+
+echo "Fetching and uploading menus for: ${RESTAURANTS[*]}"
 
 for restaurant in "${RESTAURANTS[@]}"; do
   echo "========================================"
   echo "Processing restaurant: $restaurant"
   echo "========================================"
-  
-  go run "$MAIN_DIR/main.go" -restaurant="$restaurant" -upload
-  
+
+  go run ./cmd/app -restaurant="$restaurant" -upload
+
   echo "Completed processing for $restaurant"
-  
-  # Add a short delay between runs to avoid API rate limits
-  sleep 2
 done
 
 echo "All restaurants processed successfully!"
