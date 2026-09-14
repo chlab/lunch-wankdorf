@@ -16,6 +16,7 @@ This project follows the [Standard Go Project Layout](https://github.com/golang-
   - `/pkg/scraper`: Web scraping functionality using Colly
 - `/scripts`: Scripts to perform various build, install, analysis, etc operations
 - `/web`: Vuejs frontend
+- `/worker`: Cloudflare Worker that triggers the scheduled workflows
 
 ## Requirements
 
@@ -147,6 +148,35 @@ error state. Point it at a local copy of the menus to work on the UI:
 ```bash
 VITE_MENU_BASE_URL=http://localhost:8099 npm run dev
 ```
+
+## Monitoring
+
+The jobs are triggered by the Worker in `/worker`, not by GitHub's own cron,
+which had been delivering `schedule:` events up to six hours late. Neither
+GitHub nor Cloudflare reports a trigger that never happened, so each workflow
+pings [healthchecks.io](https://healthchecks.io) when it ends: the check's URL
+on success, the same URL with `/fail` appended when a step failed. A run that
+breaks is emailed immediately, a run that never starts once the grace lapses.
+
+That configuration lives in the healthchecks.io account rather than in this
+repo, so it is written down here. Three checks, each **Schedule: Cron**, with
+**Time zone `Europe/Zurich`** and a **30 minute grace**:
+
+| Check | Cron | Pinged by |
+|---|---|---|
+| `lunch-menu-fetch` | `0 6 * * 1` | `weekly-menu-fetch.yml` |
+| `lunch-photo-fetch` | `0 8 * * 1-5` | `daily-photo-fetch.yml` |
+| `lunch-menu-prune` | `0 23 * * 0` | `weekly-menu-prune.yml` |
+
+The time zone matters. The Worker decides what is due in Europe/Zurich local
+time, so a check pinned to UTC would cry wolf twice a year at the DST
+changeover. The grace covers the retry step, which takes about 16 minutes at
+its worst.
+
+The ping URLs are held as the repository secrets `HC_PING_MENU_FETCH`,
+`HC_PING_PHOTO_FETCH` and `HC_PING_MENU_PRUNE`. The times above have to match
+`SCHEDULE` in `worker/src/schedule.js` — changing one without the other buys
+either false alarms or a blind spot.
 
 ## Credits
 
