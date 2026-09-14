@@ -13,9 +13,8 @@ crons = ["0 * * * *"]
 GH_OWNER = "chlab"
 GH_REPO = "lunch-wankdorf"
 GH_REF = "main"
-# Logs what it would dispatch instead of dispatching. Set to "false" once the
-# schedule has been observed firing correctly.
-DRY_RUN = "true"
+# Set to "true" to log what would be dispatched instead of dispatching.
+DRY_RUN = "false"
 
 # Secret, set with: npx wrangler secret put GH_DISPATCH_TOKEN
 # GH_DISPATCH_TOKEN
