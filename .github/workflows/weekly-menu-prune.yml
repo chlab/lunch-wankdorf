@@ -1,8 +1,7 @@
 name: Weekly Menu Prune
 
+# Dispatched by the scheduler Worker in worker/ on Sundays at 23:00 Europe/Zurich.
 on:
-  schedule:
-    - cron: '0 23 * * 0'  # Every Sunday at 11 PM UTC
   workflow_dispatch:
 
 jobs:

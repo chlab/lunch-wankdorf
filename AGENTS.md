@@ -77,6 +77,17 @@ Notes:
 
 ## CI/CD summary
 
-- `weekly-menu-fetch.yml`: runs Mondays 05:00 UTC, fetches/upload menus (matrix of restaurants, currently excluding `freibank`).
-- `weekly-menu-prune.yml`: runs Sundays 23:00 UTC, removes old R2 menu files.
+Scheduling lives in the Cloudflare Worker in `worker/`, not in the workflows.
+GitHub delivered its own `schedule:` events hours late, so the workflows are
+`workflow_dispatch` only. The Worker wakes hourly and dispatches each one when
+it falls due in Europe/Zurich local time.
+
+- `weekly-menu-fetch.yml`: Mondays 06:00 local, fetches/uploads menus (matrix of restaurants, currently excluding `freibank`).
+- `daily-photo-fetch.yml`: weekdays 08:00 local, adds that day's Espace dish photos.
+- `weekly-menu-prune.yml`: Sundays 23:00 local, removes old R2 menu files.
+- `deploy-worker.yml`: tests and deploys `worker/` on push to `main`.
 - `deploy.yml`: builds `web/` and deploys to GitHub Pages on push to `main`.
+
+The three scheduled workflows ping healthchecks.io on success and `/fail` on
+failure, which emails on a failed or missing run. Changing a schedule means
+changing both `worker/src/schedule.js` and the matching healthchecks.io check.

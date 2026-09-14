@@ -1,8 +1,7 @@
 name: Weekly Menu Fetch
 
+# Dispatched by the scheduler Worker in worker/ on Mondays at 06:00 Europe/Zurich.
 on:
-  schedule:
-    - cron: '37 4 * * 1'  # off-peak minute; top of the hour gets delayed or dropped
   workflow_dispatch:
 
 jobs:
