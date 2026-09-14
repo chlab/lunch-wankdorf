@@ -52,3 +52,19 @@ jobs:
               -e CLOUDFLARE_BUCKET_NAME=${{ secrets.CLOUDFLARE_BUCKET_NAME }} \
               chlab/lunch-wankdorf:latest \
               -restaurant ${{ matrix.restaurant }} -upload
+
+  report:
+    name: Report to healthchecks
+    runs-on: ubuntu-latest
+    needs: fetch-menus
+    if: always()
+
+    steps:
+      - name: Ping healthchecks
+        run: |
+          url='${{ secrets.HC_PING_MENU_FETCH }}'
+          if [ '${{ needs.fetch-menus.result }}' = 'success' ]; then
+            curl -fsS -m 10 --retry 3 "$url"
+          else
+            curl -fsS -m 10 --retry 3 "$url/fail"
+          fi

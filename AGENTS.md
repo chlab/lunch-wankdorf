@@ -15,6 +15,7 @@ This file is for coding agents working in this repository.
 - `pkg/ai/openai.go`: OpenAI prompting and JSON normalization.
 - `pkg/file/writer.go`: debug/output file writers.
 - `web/`: frontend app.
+- `worker/`: Cloudflare Worker that triggers the scheduled workflows.
 - `scripts/`: helper scripts for upload/prune/publish.
 - `.github/workflows/`: weekly fetch, weekly prune, and frontend deploy.
 

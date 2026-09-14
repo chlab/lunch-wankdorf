@@ -48,3 +48,11 @@ jobs:
               -e CLOUDFLARE_BUCKET_NAME=${{ secrets.CLOUDFLARE_BUCKET_NAME }} \
               chlab/lunch-wankdorf:latest \
               -restaurant espace -photos -upload
+
+      - name: Report success to healthchecks
+        if: success()
+        run: curl -fsS -m 10 --retry 3 '${{ secrets.HC_PING_PHOTO_FETCH }}'
+
+      - name: Report failure to healthchecks
+        if: failure()
+        run: curl -fsS -m 10 --retry 3 '${{ secrets.HC_PING_PHOTO_FETCH }}/fail'

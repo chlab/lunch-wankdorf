@@ -1,0 +1,21 @@
+name = "lunch-wankdorf-scheduler"
+main = "src/index.js"
+compatibility_date = "2026-09-14"
+workers_dev = false
+
+# Fires hourly; the Worker decides which jobs are due in Europe/Zurich local
+# time. A trigger per job would need one per DST offset, over the free plan's
+# limit of 5 per account.
+[triggers]
+crons = ["0 * * * *"]
+
+[vars]
+GH_OWNER = "chlab"
+GH_REPO = "lunch-wankdorf"
+GH_REF = "main"
+# Logs what it would dispatch instead of dispatching. Set to "false" once the
+# schedule has been observed firing correctly.
+DRY_RUN = "true"
+
+# Secret, set with: npx wrangler secret put GH_DISPATCH_TOKEN
+# GH_DISPATCH_TOKEN

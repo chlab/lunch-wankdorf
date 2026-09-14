@@ -24,3 +24,11 @@ jobs:
         run: |
           chmod +x ./scripts/prune-menus.sh
           bash ./scripts/prune-menus.sh --yes
+
+      - name: Report success to healthchecks
+        if: success()
+        run: curl -fsS -m 10 --retry 3 '${{ secrets.HC_PING_MENU_PRUNE }}'
+
+      - name: Report failure to healthchecks
+        if: failure()
+        run: curl -fsS -m 10 --retry 3 '${{ secrets.HC_PING_MENU_PRUNE }}/fail'
