@@ -20,22 +20,31 @@ describe("dueJobs", () => {
     expect(dueJobs(new Date("2026-01-12T04:00:00Z"))).toEqual([]);
   });
 
-  test("dispatches the photo fetch on weekdays at 08:00 Zurich time", () => {
-    expect(dueJobs(new Date("2026-06-16T06:00:00Z"))).toEqual([
+  test("dispatches the photo fetch on weekdays at 11:00 Zurich time", () => {
+    expect(dueJobs(new Date("2026-06-16T09:00:00Z"))).toEqual([
+      "daily-photo-fetch.yml",
+    ]);
+    expect(dueJobs(new Date("2026-01-13T10:00:00Z"))).toEqual([
       "daily-photo-fetch.yml",
     ]);
   });
 
+  // Espace uploads a day's photos between 07:47 and 08:08 UTC, so an 08:00 local
+  // run beat them to it all summer and scraped the placeholder instead.
+  test("does not dispatch the photo fetch before the photos are up", () => {
+    expect(dueJobs(new Date("2026-06-16T06:00:00Z"))).toEqual([]);
+  });
+
   test("does not dispatch the photo fetch at the weekend", () => {
-    expect(dueJobs(new Date("2026-06-20T06:00:00Z"))).toEqual([]);
-    expect(dueJobs(new Date("2026-06-21T06:00:00Z"))).toEqual([]);
+    expect(dueJobs(new Date("2026-06-20T09:00:00Z"))).toEqual([]);
+    expect(dueJobs(new Date("2026-06-21T09:00:00Z"))).toEqual([]);
   });
 
   test("dispatches both Monday jobs at their own hours, never together", () => {
     expect(dueJobs(new Date("2026-06-15T04:00:00Z"))).toEqual([
       "weekly-menu-fetch.yml",
     ]);
-    expect(dueJobs(new Date("2026-06-15T06:00:00Z"))).toEqual([
+    expect(dueJobs(new Date("2026-06-15T09:00:00Z"))).toEqual([
       "daily-photo-fetch.yml",
     ]);
   });

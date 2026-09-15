@@ -165,7 +165,7 @@ repo, so it is written down here. Three checks, each **Schedule: Cron**, with
 | Check | Cron | Pinged by |
 |---|---|---|
 | `lunch-menu-fetch` | `0 6 * * 1` | `weekly-menu-fetch.yml` |
-| `lunch-photo-fetch` | `0 8 * * 1-5` | `daily-photo-fetch.yml` |
+| `lunch-photo-fetch` | `0 11 * * 1-5` | `daily-photo-fetch.yml` |
 | `lunch-menu-prune` | `0 23 * * 0` | `weekly-menu-prune.yml` |
 
 The time zone matters. The Worker decides what is due in Europe/Zurich local

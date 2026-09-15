@@ -5,7 +5,7 @@ const WEEKDAYS = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
 // Local times in Europe/Zurich. Keep in sync with the healthchecks.io schedules.
 export const SCHEDULE = [
   { workflow: "weekly-menu-fetch.yml", weekdays: [1], hour: 6 },
-  { workflow: "daily-photo-fetch.yml", weekdays: [1, 2, 3, 4, 5], hour: 8 },
+  { workflow: "daily-photo-fetch.yml", weekdays: [1, 2, 3, 4, 5], hour: 11 },
   { workflow: "weekly-menu-prune.yml", weekdays: [0], hour: 23 },
 ];
 

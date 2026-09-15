@@ -1,10 +1,10 @@
 name: Daily Photo Fetch
 
-# Espace only publishes a day's dish photos on the morning of that day (they show
-# up between 07:20 and 07:50 local), so the Monday menu run cannot pick up the rest
-# of the week. This adds them as they appear, without re-parsing the menu.
-# Dispatched by the scheduler Worker in worker/ on weekdays at 08:00 Europe/Zurich,
-# once the photos are up.
+# Espace only publishes a day's dish photos on the morning of that day (they land
+# between 07:47 and 08:08 UTC), so the Monday menu run cannot pick up the rest of
+# the week. This adds them as they appear, without re-parsing the menu.
+# Dispatched by the scheduler Worker in worker/ on weekdays at 11:00 Europe/Zurich,
+# which clears that window in either DST offset.
 on:
   workflow_dispatch:
 
